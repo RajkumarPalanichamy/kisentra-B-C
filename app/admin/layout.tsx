@@ -8,21 +8,60 @@ import Link from 'next/link';
 const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, logout } = useAdmin();
+  const { isAuthenticated, isLoading, logout } = useAdmin();
 
   useEffect(() => {
+    // Wait for auth check to complete
+    if (isLoading) return;
+    
     // Allow access to login page without authentication
     if (pathname !== '/admin/login' && !isAuthenticated) {
-      router.push('/admin/login');
+      // Use window.location for immediate redirect (prevents any rendering)
+      window.location.href = '/admin/login';
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, isLoading, pathname]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f6f6f8'
+      }}>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid var(--color-primary-two)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }}></div>
+          <p style={{ color: 'var(--color-default)' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Don't show layout on login page
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
-  if (!isAuthenticated) {
+  // CRITICAL: Don't render anything if not authenticated - redirect immediately
+  if (!isLoading && !isAuthenticated && pathname !== '/admin/login') {
+    // Return null and let useEffect handle the redirect
+    // This prevents any content from rendering
     return null;
   }
 

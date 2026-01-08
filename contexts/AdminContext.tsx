@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface AdminContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
 }
@@ -18,12 +19,16 @@ const ADMIN_CREDENTIALS = {
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if admin is logged in on mount
   useEffect(() => {
-    const adminAuth = localStorage.getItem('adminAuth');
-    if (adminAuth === 'true') {
-      setIsAuthenticated(true);
+    if (typeof window !== 'undefined') {
+      const adminAuth = localStorage.getItem('adminAuth');
+      if (adminAuth === 'true') {
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
     }
   }, []);
 
@@ -45,6 +50,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     <AdminContext.Provider
       value={{
         isAuthenticated,
+        isLoading,
         login,
         logout,
       }}

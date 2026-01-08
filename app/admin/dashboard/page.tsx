@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAdmin } from '@/contexts/AdminContext';
 import Products from '@/api/products';
 import { Product } from '@/api/products';
@@ -8,7 +9,15 @@ import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
 
 const AdminDashboard: React.FC = () => {
-  const { isAuthenticated } = useAdmin();
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAdmin();
+  
+  // Immediate redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      window.location.href = '/admin/login';
+    }
+  }, [isAuthenticated, isLoading]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalValue: 0,
@@ -33,7 +42,8 @@ const AdminDashboard: React.FC = () => {
     });
   }, []);
 
-  if (!isAuthenticated) {
+  // Don't render if loading or not authenticated (layout will handle redirect)
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 

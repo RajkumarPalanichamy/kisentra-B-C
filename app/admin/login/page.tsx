@@ -7,22 +7,26 @@ import { Fade } from 'react-awesome-reveal';
 
 const AdminLoginPage: React.FC = () => {
   const router = useRouter();
-  const { isAuthenticated, login } = useAdmin();
+  const { isAuthenticated, isLoading, login } = useAdmin();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Wait for auth check to complete
+    if (isLoading) return;
+    
+    // If already authenticated, redirect to dashboard
     if (isAuthenticated) {
       router.push('/admin/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     // Simulate login delay
     setTimeout(() => {
@@ -31,7 +35,7 @@ const AdminLoginPage: React.FC = () => {
         router.push('/admin/dashboard');
       } else {
         setError('Invalid username or password');
-        setIsLoading(false);
+        setIsSubmitting(false);
       }
     }, 500);
   };
@@ -142,15 +146,15 @@ const AdminLoginPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting || isLoading}
               className="thm-btn thm-btn--aso thm-btn--aso_yellow"
               style={{
                 width: '100%',
-                opacity: isLoading ? 0.6 : 1,
-                cursor: isLoading ? 'not-allowed' : 'pointer'
+                opacity: (isSubmitting || isLoading) ? 0.6 : 1,
+                cursor: (isSubmitting || isLoading) ? 'not-allowed' : 'pointer'
               }}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isSubmitting ? 'Logging in...' : 'Login'}
             </button>
           </form>
 

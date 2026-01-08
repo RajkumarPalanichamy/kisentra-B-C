@@ -11,20 +11,30 @@ import Image from 'next/image';
 const AdminProductsPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAdmin();
+  const { isAuthenticated, isLoading } = useAdmin();
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  // Immediate redirect if not authenticated
   useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      window.location.href = '/admin/login';
+      return;
+    }
+  }, [isAuthenticated, isLoading]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return; // Don't load if not authenticated
+    
     loadProducts();
-    const action = searchParams.get('action');
+    const action = searchParams?.get('action');
     if (action === 'add') {
       setShowForm(true);
       setEditingProduct(null);
     }
-  }, [searchParams]);
+  }, [searchParams, isAuthenticated]);
 
   const loadProducts = () => {
     const loadedProducts = getProducts();
@@ -83,7 +93,8 @@ const AdminProductsPage: React.FC = () => {
     setProducts(updatedProducts);
   };
 
-  if (!isAuthenticated) {
+  // Don't render if loading or not authenticated (layout will handle redirect)
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 
@@ -415,32 +426,82 @@ const ProductForm: React.FC<{
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px',
-      overflowY: 'auto'
-    }}>
-      <div style={{
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px',
+        overflowY: 'auto'
+      }}
+      onClick={(e) => {
+        // Close modal when clicking on backdrop
+        if (e.target === e.currentTarget) {
+          onCancel();
+        }
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
         backgroundColor: '#fff',
         padding: '40px',
         borderRadius: '15px',
         maxWidth: '800px',
         width: '100%',
         maxHeight: '90vh',
-        overflowY: 'auto'
+        overflowY: 'auto',
+        position: 'relative'
       }}>
-        <h2 style={{ marginBottom: '30px', fontSize: '24px' }}>
-          {product ? 'Edit Product' : 'Add New Product'}
-        </h2>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '30px'
+        }}>
+          <h2 style={{ fontSize: '24px', margin: 0 }}>
+            {product ? 'Edit Product' : 'Add New Product'}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '28px',
+              color: 'var(--color-default)',
+              cursor: 'pointer',
+              padding: '5px 10px',
+              lineHeight: '1',
+              transition: 'color 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#f6f6f8'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-heading)';
+              e.currentTarget.style.backgroundColor = '#e7e8ec';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-default)';
+              e.currentTarget.style.backgroundColor = '#f6f6f8';
+            }}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="row">
