@@ -576,7 +576,7 @@ const CheckoutPage: React.FC = () => {
                           borderBottom: '1px solid #e7e8ec'
                         }}>
                           <span>Subtotal:</span>
-                          <span style={{ fontWeight: '600' }}>${getTotalPrice().toFixed(2)}</span>
+                          <span style={{ fontWeight: '600' }}>${getSubtotal().toFixed(2)}</span>
                         </div>
                         <div style={{
                           display: 'flex',
@@ -598,7 +598,7 @@ const CheckoutPage: React.FC = () => {
                         }}>
                           <span>Total:</span>
                           <span style={{ color: 'var(--color-primary-two)' }}>
-                            ${getTotalPrice().toFixed(2)}
+                            ${getSubtotal().toFixed(2)}
                           </span>
                         </div>
                       </div>

@@ -346,8 +346,7 @@ const Products: Product[] = [
 // Export default for backward compatibility
 export default Products
 
-// Export functions for admin panel
-export { getProducts, saveProducts }
+// Functions are already exported above (getProducts, saveProducts)
 
 
 
