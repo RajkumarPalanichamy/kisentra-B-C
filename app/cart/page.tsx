@@ -210,7 +210,7 @@ const CartPage: React.FC = () => {
                       top: '100px'
                     }}>
                       <h3 className="mb-30" style={{ fontSize: '24px', marginBottom: '30px' }}>
-                        Order Summary
+                        Price Details
                       </h3>
 
                       <div className="summary-row mb-20" style={{
@@ -220,9 +220,46 @@ const CartPage: React.FC = () => {
                         paddingBottom: '15px',
                         borderBottom: '1px solid #e7e8ec'
                       }}>
-                        <span>Subtotal:</span>
+                        <span>Price ({getTotalItems()} item{getTotalItems() !== 1 ? 's' : ''}):</span>
                         <span style={{ fontWeight: '600' }}>${getSubtotal().toFixed(2)}</span>
                       </div>
+
+                      <div className="summary-row mb-20" style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '15px',
+                        paddingBottom: '15px',
+                        borderBottom: '1px solid #e7e8ec'
+                      }}>
+                        <span>Delivery Charges:</span>
+                        <span style={{ fontWeight: '600', color: getShipping() === 0 ? 'green' : 'inherit' }}>
+                          {getShipping() === 0 ? (
+                            <>
+                              <span style={{ textDecoration: 'line-through', color: 'var(--color-default)', marginRight: '5px' }}>
+                                $10.00
+                              </span>
+                              <span style={{ color: 'green' }}>FREE</span>
+                            </>
+                          ) : (
+                            `$${getShipping().toFixed(2)}`
+                          )}
+                        </span>
+                      </div>
+
+                      {getSubtotal() < 100 && (
+                        <div style={{
+                          padding: '10px',
+                          backgroundColor: '#fff3cd',
+                          borderRadius: '7px',
+                          marginBottom: '15px',
+                          fontSize: '14px',
+                          color: '#856404',
+                          border: '1px solid #ffeaa7'
+                        }}>
+                          <i className="fas fa-info-circle" style={{ marginRight: '8px' }}></i>
+                          Add ${(100 - getSubtotal()).toFixed(2)} more for FREE delivery
+                        </div>
+                      )}
 
                       <div className="summary-row mb-20" style={{
                         display: 'flex',
@@ -235,19 +272,6 @@ const CartPage: React.FC = () => {
                         <span style={{ fontWeight: '600' }}>${getTax().toFixed(2)}</span>
                       </div>
 
-                      <div className="summary-row mb-20" style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: '15px',
-                        paddingBottom: '15px',
-                        borderBottom: '1px solid #e7e8ec'
-                      }}>
-                        <span>Shipping:</span>
-                        <span style={{ fontWeight: '600' }}>
-                          {getShipping() === 0 ? 'Free' : `$${getShipping().toFixed(2)}`}
-                        </span>
-                      </div>
-
                       <div className="summary-row mb-30" style={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -255,12 +279,26 @@ const CartPage: React.FC = () => {
                         paddingTop: '15px',
                         fontSize: '20px',
                         fontWeight: '700',
-                        color: 'var(--color-heading)'
+                        color: 'var(--color-heading)',
+                        borderTop: '2px solid #e7e8ec'
                       }}>
-                        <span>Total:</span>
+                        <span>Total Amount:</span>
                         <span style={{ color: 'var(--color-primary-two)' }}>
                           ${getTotal().toFixed(2)}
                         </span>
+                      </div>
+
+                      <div style={{
+                        padding: '15px',
+                        backgroundColor: '#d4edda',
+                        borderRadius: '7px',
+                        marginBottom: '20px',
+                        fontSize: '14px',
+                        color: '#155724',
+                        border: '1px solid #c3e6cb'
+                      }}>
+                        <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
+                        You will save ${(getTax()).toFixed(2)} on this order
                       </div>
 
                       <div className="cart-actions" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -269,7 +307,7 @@ const CartPage: React.FC = () => {
                           className="thm-btn thm-btn--aso thm-btn--aso_yellow"
                           style={{ width: '100%', textAlign: 'center' }}
                         >
-                          Proceed to Checkout
+                          Place Order
                         </Link>
                         <Link
                           href="/products"

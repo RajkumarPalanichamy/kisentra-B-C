@@ -242,3 +242,183 @@
   color: #e7e8ec;
   margin-bottom: 30px;
 }
+
+/* Flipkart-style enhancements using existing design system */
+
+/* Product Carousel */
+.product-carousel-container {
+  position: relative;
+}
+
+.product-carousel-nav-btn {
+  transition: all 0.3s ease;
+}
+
+.product-carousel-nav-btn:hover {
+  background-color: var(--color-primary-two);
+  color: #fff;
+  border-color: var(--color-primary-two);
+}
+
+/* Filter Sidebar */
+.product-filters {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-two) #f6f6f8;
+}
+
+.product-filters::-webkit-scrollbar {
+  width: 6px;
+}
+
+.product-filters::-webkit-scrollbar-track {
+  background: #f6f6f8;
+  border-radius: 10px;
+}
+
+.product-filters::-webkit-scrollbar-thumb {
+  background: var(--color-primary-two);
+  border-radius: 10px;
+}
+
+.filter-section label:hover {
+  background-color: #f6f6f8;
+}
+
+.filter-section input[type="radio"]:checked + span {
+  color: var(--color-primary-two);
+  font-weight: 600;
+}
+
+/* Image Zoom Enhancement */
+.main-product-image {
+  transition: transform 0.3s ease;
+}
+
+.main-product-image:hover {
+  cursor: zoom-in;
+}
+
+/* Price Breakdown Enhancements */
+.cart-summary .summary-row {
+  transition: all 0.3s ease;
+}
+
+/* Search Bar Enhancement */
+input[type="text"]:focus {
+  border-color: var(--color-primary-two);
+  box-shadow: 0 0 0 3px rgba(15, 83, 220, 0.1);
+}
+
+/* Category Quick Access Buttons */
+.thm-btn--border:hover {
+  background-color: var(--color-primary-two);
+  color: #fff;
+  border-color: var(--color-primary-two);
+}
+
+/* Responsive Adjustments for New Components */
+@media (max-width: 991px) {
+  .product-filters {
+    position: relative;
+    top: 0;
+    max-height: none;
+    margin-bottom: 30px;
+  }
+  
+  .product-carousel-nav-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .product-filters {
+    padding: 20px;
+  }
+  
+  .filter-section {
+    margin-bottom: 20px;
+  }
+}
+
+/* Amazon-style Home Page Enhancements */
+
+/* Hero Banner Carousel */
+.hero-banner-carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.banner-dot {
+  transition: all 0.3s ease;
+}
+
+.banner-dot:hover {
+  transform: scale(1.2);
+}
+
+/* Category Grid Cards */
+.category-card {
+  transition: all 0.3s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+/* Today's Deals Section */
+.todays-deals-section {
+  background: linear-gradient(135deg, #f6f6f8 0%, #e7e8ec 100%);
+}
+
+/* Benefits Section */
+.benefit-card {
+  transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-5px);
+  background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Newsletter Section */
+.newsletter-section input:focus {
+  border-color: var(--color-primary-two);
+  box-shadow: 0 0 0 3px rgba(15, 83, 220, 0.1);
+}
+
+/* Responsive Adjustments for Amazon-style Home */
+@media (max-width: 991px) {
+  .hero-banner-carousel h1 {
+    font-size: 36px !important;
+  }
+  
+  .hero-banner-carousel p {
+    font-size: 16px !important;
+  }
+  
+  .category-grid .col-lg-2 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-banner-carousel {
+    height: 300px !important;
+  }
+  
+  .hero-banner-carousel h1 {
+    font-size: 28px !important;
+  }
+  
+  .category-grid .col-lg-2 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+  
+  .benefits-section .col-lg-2 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}

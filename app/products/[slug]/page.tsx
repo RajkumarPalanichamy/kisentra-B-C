@@ -49,6 +49,8 @@ const ProductDetailPage: React.FC = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
 
   if (!isMounted) {
     return (
@@ -154,20 +156,38 @@ const ProductDetailPage: React.FC = () => {
                 <div className="col-lg-6">
                   <Fade direction="left" triggerOnce duration={1000}>
                     <div className="product-detail-images">
-                      <div className="main-product-image mb-30" style={{
-                        position: 'relative',
-                        width: '100%',
-                        aspectRatio: '1',
-                        borderRadius: '15px',
-                        overflow: 'hidden',
-                        backgroundColor: '#f6f6f8',
-                        border: '1px solid #e7e8ec'
-                      }}>
+                      <div 
+                        className="main-product-image mb-30" 
+                        style={{
+                          position: 'relative',
+                          width: '100%',
+                          aspectRatio: '1',
+                          borderRadius: '15px',
+                          overflow: 'hidden',
+                          backgroundColor: '#f6f6f8',
+                          border: '1px solid #e7e8ec',
+                          cursor: isZoomed ? 'zoom-out' : 'zoom-in'
+                        }}
+                        onMouseMove={(e) => {
+                          if (!isZoomed) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = ((e.clientX - rect.left) / rect.width) * 100;
+                          const y = ((e.clientY - rect.top) / rect.height) * 100;
+                          setZoomPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+                        }}
+                        onMouseEnter={() => setIsZoomed(true)}
+                        onMouseLeave={() => setIsZoomed(false)}
+                      >
                         <Image
                           src={mainImage}
                           alt={product.title}
                           fill
-                          style={{ objectFit: 'cover' }}
+                          style={{ 
+                            objectFit: 'cover',
+                            transform: isZoomed ? `scale(2)` : 'scale(1)',
+                            transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                            transition: isZoomed ? 'none' : 'transform 0.3s ease'
+                          }}
                         />
                       </div>
                       
