@@ -88,7 +88,10 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
       description: product.description || null,
       long_description: product.longDescription || product.description || null,
       category: product.category,
-      images: product.images || [],
+      images: (product.images || []).map((img: any) => {
+        if (typeof img === 'string') return img;
+        return img.src || img; // Handle StaticImageData or object with src
+      }),
       stock: product.inStock ? 100 : 0,
       rating: product.rating || null,
       reviews: product.reviews || null,
