@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Fragment, useEffect } from 'react';
+import React, { useState, Fragment, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
@@ -10,7 +10,7 @@ import { getCategories, Category } from '@/api/categories';
 import ProductCard from '@/components/ProductCard/ProductCard';
 import { Fade } from 'react-awesome-reveal';
 
-const ProductsPage: React.FC = () => {
+const ProductsContent: React.FC = () => {
   const searchParams = useSearchParams();
   const searchQuery = searchParams?.get('search') || '';
   const categoryParam = searchParams?.get('category') || '';
@@ -430,6 +430,14 @@ const ProductsPage: React.FC = () => {
         <Scrollbar />
       </div>
     </Fragment>
+  );
+};
+
+const ProductsPage = () => {
+  return (
+    <Suspense fallback={<div className="container pt-140 pb-140 text-center">Loading products...</div>}>
+      <ProductsContent />
+    </Suspense>
   );
 };
 
