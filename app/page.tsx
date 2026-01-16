@@ -8,26 +8,33 @@ import ProductCarousel from '../components/ProductCarousel/ProductCarousel';
 import ProductCard from '../components/ProductCard/ProductCard';
 import { getProducts, Product } from '@/api/products';
 import { getCategories, Category } from '@/api/categories';
+import { getBanners, Banner } from '@/api/banners';
 import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
 
 const HomePage = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
   useEffect(() => {
     setIsMounted(true);
     setProducts(getProducts());
+    getBanners().then((data) => {
+      console.log('Homepage Banners Loaded:', data);
+      setBanners(data);
+    }).catch(err => console.error('Homepage Banner Fetch Error:', err));
   }, []);
 
   // Banner rotation
   useEffect(() => {
+    if (banners.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % 3);
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [banners.length]);
 
   // Premium Scroll Reveal Animation
   useEffect(() => {
@@ -56,9 +63,27 @@ const HomePage = () => {
 
   // Amazon-style product categorization
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   useEffect(() => {
-    getCategories().then(setCategories);
+    // 1. Optimistic UI: Load from local storage immediately
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('adminCategories');
+      if (saved) {
+        try {
+          setCategories(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse cached categories', e);
+        }
+      }
+    }
+
+    // 2. Fetch fresh data in background
+    setIsLoadingCategories(true);
+    getCategories().then((data) => {
+      setCategories(data);
+      setIsLoadingCategories(false);
+    });
   }, []);
 
   const todaysDeals = isMounted
@@ -103,17 +128,18 @@ const HomePage = () => {
         <main className="page_content" style={{ paddingTop: '160px' }}>
 
           {/* Category Bar - Flipkart Style */}
-          {categories.length > 0 && (
-            <section style={{ marginBottom: '30px', marginTop: '20px', backgroundColor: '#fff', padding: '15px 0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="container">
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center', // Centered for cleaner look, or 'flex-start' if scrollable
-                  gap: '40px',
-                  overflowX: 'auto',
-                  paddingBottom: '10px'
-                }}>
-                  {categories.map((category) => (
+          {/* Category Bar - Flipkart Style */}
+          <section style={{ marginBottom: '30px', marginTop: '20px', backgroundColor: '#fff', padding: '15px 0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '120px' }}>
+            <div className="container">
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center', // Centered for cleaner look, or 'flex-start' if scrollable
+                gap: '40px',
+                overflowX: 'auto',
+                paddingBottom: '10px'
+              }}>
+                {categories.length > 0 ? (
+                  categories.map((category) => (
                     <Link
                       key={category.id || category.slug}
                       href={`/products?category=${encodeURIComponent(category.name)}`}
@@ -168,149 +194,92 @@ const HomePage = () => {
                         {category.name}
                       </span>
                     </Link>
-                  ))}
+                  ))
+                ) : (
+                  // Skeleton Loader
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '50%',
+                        backgroundColor: '#eee',
+                        animation: 'pulse 1.5s infinite'
+                      }} />
+                      <div style={{
+                        width: '50px',
+                        height: '10px',
+                        backgroundColor: '#eee',
+                        borderRadius: '4px',
+                        animation: 'pulse 1.5s infinite'
+                      }} />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Hero Banner - Dynamic Admin Controlled */}
+          {banners.length > 0 && (
+            <section style={{ marginBottom: '40px', padding: '10px' }}>
+              <div className="container-fluid" style={{ maxWidth: '1600px', padding: 0 }}>
+                <div style={{ position: 'relative', overflow: 'hidden', minHeight: '320px' }}>
+
+                  {/* Banner Content (Single Image Mode) */}
+                  <Link href={banners[currentBannerIndex].link || '/products'} style={{ display: 'block', width: '100%', height: '100%' }}>
+                    <div style={{
+                      width: '100%',
+                      height: '320px',
+                      position: 'relative',
+                      backgroundColor: '#f5f5f5' // placeholder bg
+                    }}>
+                      <img
+                        key={banners[currentBannerIndex].image_url}
+                        src={banners[currentBannerIndex].image_url}
+                        alt={banners[currentBannerIndex].title}
+                        onError={(e) => e.currentTarget.src = 'https://placehold.co/1600x320/png?text=Banner+Image'}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover', // Ensures image covers the area nicely
+                          display: 'block'
+                        }}
+                      />
+                      {/* Optional: Add minimal invisible overlay for clickability if needed, but wrapping Link handles it. */}
+                    </div>
+                  </Link>
+
+                  {/* Navigation Arrows */}
+                  <div style={{ position: 'absolute', top: '50%', left: '0', transform: 'translateY(-50%)', zIndex: 10 }}>
+                    <button
+                      onClick={() => setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)}
+                      style={{ width: '40px', height: '80px', background: '#fff', border: 'none', borderRadius: '0 4px 4px 0', boxShadow: '2px 0 5px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-chevron-left" style={{ color: '#555' }}></i>
+                    </button>
+                  </div>
+
+                  <div style={{ position: 'absolute', top: '50%', right: '0', transform: 'translateY(-50%)', zIndex: 10 }}>
+                    <button
+                      onClick={() => setCurrentBannerIndex((prev) => (prev + 1) % banners.length)}
+                      style={{ width: '40px', height: '80px', background: '#fff', border: 'none', borderRadius: '4px 0 0 4px', boxShadow: '-2px 0 5px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-chevron-right" style={{ color: '#555' }}></i>
+                    </button>
+                  </div>
+
+                  {/* Dots indicator */}
+                  <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 10 }}>
+                    {banners.map((_, idx) => (
+                      <div key={idx}
+                        onClick={() => setCurrentBannerIndex(idx)}
+                        style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff', opacity: currentBannerIndex === idx ? 1 : 0.5, cursor: 'pointer' }}></div>
+                    ))}
+                  </div>
+
                 </div>
               </div>
             </section>
           )}
-
-          {/* Hero Banner - Yellow Collection Slider */}
-          <section style={{
-            marginBottom: '60px',
-            padding: '0 15px'
-          }}>
-            <div className="container" style={{ maxWidth: '1600px' }}>
-              <div style={{
-                backgroundColor: '#ffc220',
-                borderRadius: '20px',
-                padding: '60px 80px',
-                position: 'relative',
-                overflow: 'hidden',
-                minHeight: '400px',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <div className="row w-100 align-items-center">
-
-                  {/* Left Content */}
-                  <div className="col-lg-5">
-                    <Fade direction="left" triggerOnce>
-                      <div>
-                        <h2 style={{
-                          fontSize: '48px',
-                          fontWeight: '800',
-                          color: '#222',
-                          marginBottom: '20px',
-                          lineHeight: '1.1'
-                        }}>
-                          Build an elite collection
-                        </h2>
-                        <p style={{
-                          fontSize: '18px',
-                          color: '#333',
-                          marginBottom: '35px',
-                          fontWeight: '500'
-                        }}>
-                          Choose your next adventure from thousands of finds.
-                        </p>
-                        <Link href="/products" style={{
-                          display: 'inline-block',
-                          backgroundColor: '#4a3b18',
-                          color: '#ffc220',
-                          padding: '15px 35px',
-                          borderRadius: '30px',
-                          fontWeight: '700',
-                          textDecoration: 'none',
-                          transition: 'transform 0.2s',
-                          border: '2px solid transparent'
-                        }}
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                          Start your journey
-                        </Link>
-                      </div>
-                    </Fade>
-                  </div>
-
-                  {/* Right Content - Categories */}
-                  <div className="col-lg-7">
-                    <Fade direction="right" triggerOnce>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        alignItems: 'flex-end',
-                        textAlign: 'center',
-                        flexWrap: 'wrap',
-                        gap: '20px'
-                      }}>
-                        {/* Item 1: Lego */}
-                        <Link href="/products?category=lego" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
-                          <div style={{
-                            width: '180px',
-                            height: '180px',
-                            position: 'relative',
-                            marginBottom: '15px'
-                          }}>
-                            {/* Placeholder for Lego Temple Image - Using a generic toy/building block image or colored div for now if specific asset not available */}
-                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x200/png?text=Lego+Set) no-repeat center center / contain' }}></div>
-                          </div>
-                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Lego <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
-                        </Link>
-
-                        {/* Item 2: Coins */}
-                        <Link href="/products?category=coins" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
-                          <div style={{
-                            width: '160px',
-                            height: '160px',
-                            position: 'relative',
-                            marginBottom: '15px'
-                          }}>
-                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x200/png?text=Rare+Coins) no-repeat center center / contain' }}></div>
-                          </div>
-                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Coins <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
-                        </Link>
-
-                        {/* Item 3: Comic Books */}
-                        <Link href="/products?category=comics" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
-                          <div style={{
-                            width: '170px',
-                            height: '200px',
-                            position: 'relative',
-                            marginBottom: '15px'
-                          }}>
-                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x250/png?text=Comics) no-repeat center center / contain' }}></div>
-                          </div>
-                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Comic books <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
-                        </Link>
-                      </div>
-                    </Fade>
-                  </div>
-
-                </div>
-
-                {/* Slider Controls */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '30px',
-                  right: '40px',
-                  display: 'flex',
-                  gap: '10px'
-                }}>
-                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                    <i className="fas fa-chevron-left" style={{ fontSize: '12px', color: '#333' }}></i>
-                  </button>
-                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                    <i className="fas fa-chevron-right" style={{ fontSize: '12px', color: '#333' }}></i>
-                  </button>
-                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                    <i className="fas fa-pause" style={{ fontSize: '12px', color: '#333' }}></i>
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          </section>
 
           {/* Featured / Deals Section - Custom Design */}
           {todaysDeals.length > 0 && (

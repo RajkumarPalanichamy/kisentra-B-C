@@ -40,21 +40,38 @@ export const getCategories = async (retries = 3): Promise<Category[]> => {
 
         // Update local storage with fresh data from server
         if (data) {
+            // We don't want to overwrite local-only items, so we should be careful here.
+            // But for now keeping the "cache" concept is fine if we merge on read.
             localStorage.setItem('adminCategories', JSON.stringify(data));
         }
-        return data || [];
+
+        return mergeWithLocal(data || []);
     } catch (error: any) {
-        if (error.name === 'AbortError' || error.message?.includes('AbortError')) {
-            if (retries > 0) {
-                await new Promise(res => setTimeout(res, 500));
-                return getCategories(retries - 1);
-            }
-            // Even on Abort, try local
+        const errorMessage = typeof error === 'string' ? error : error?.message || '';
+
+        if (
+            error?.name === 'AbortError' ||
+            errorMessage.includes('AbortError') ||
+            errorMessage.includes('aborted') ||
+            errorMessage.includes('signal is aborted')
+        ) {
+            // Do not retry on abort, just return local
             return getLocalCategories();
         }
         console.error('Error in getCategories:', error);
         return getLocalCategories();
     }
+};
+
+// Helper to merge server data with local-only items
+const mergeWithLocal = (serverData: Category[]): Category[] => {
+    if (typeof window === 'undefined') return serverData;
+    const local = getLocalCategories();
+    const localOnly = local.filter(c => c.id && c.id.startsWith('local-'));
+
+    // Also merge updates to existing server items if we want to be fancy, 
+    // but for now just appending new local items is enough to fix "not add"
+    return [...serverData, ...localOnly];
 };
 
 // Save a category (Insert or Update)
@@ -93,7 +110,7 @@ export const saveCategory = async (category: Category): Promise<boolean> => {
         }
         return true;
     } catch (error: any) {
-        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('signal is aborted')) {
+        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('aborted') || error.message?.includes('signal is aborted')) {
             return false; // Silent fail on abort, but local is saved
         }
         console.error('Error saving category:', error);

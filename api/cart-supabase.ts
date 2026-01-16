@@ -237,7 +237,10 @@ export const removeCartItemFromSupabase = async (userId: string, productId: stri
             .delete()
             .eq('user_id', userId) // Security measure
             .eq('product_id', productId);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('aborted')) {
+            return;
+        }
         console.error('Error removing cart item from Supabase:', error);
     }
 };
@@ -251,7 +254,10 @@ export const clearSupabaseCart = async (userId: string) => {
             .from('cart_items')
             .delete()
             .eq('user_id', userId);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('aborted')) {
+            return;
+        }
         console.error('Error clearing Supabase cart:', error);
     }
 };

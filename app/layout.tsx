@@ -11,6 +11,7 @@ import "../styles/main.css";
 import "../styles/ecommerce.css";
 import "../styles/premium-animations.css";
 import { CartProvider } from "../contexts/CartContext";
+import { UserProvider } from "../contexts/UserContext";
 
 export const metadata: Metadata = {
   title: "Innomax - Technology & IT Startup Next Js Template",
@@ -33,9 +34,11 @@ export default function RootLayout({
         />
       </head>
       <body id='scrool'>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <UserProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </UserProvider>
       </body>
     </html>
   );

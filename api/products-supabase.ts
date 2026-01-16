@@ -66,7 +66,7 @@ export const getProductsFromSupabase = async (): Promise<Product[]> => {
       visible: item.is_active !== false,
     }));
   } catch (error: any) {
-    if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+    if (error.name === 'AbortError' || error.message?.includes('aborted') || error.message?.includes('signal is aborted')) {
       return Products;
     }
     console.error('Error in getProductsFromSupabase:', error);
@@ -108,43 +108,47 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
       updated_at: new Date().toISOString(),
     };
 
-    // Check if product exists by slug (since IDs don't match between localStorage and Supabase)
-    const { data: existingProduct, error: checkError } = await supabase
-      .from('products')
-      .select('id')
-      .eq('slug', product.slug)
-      .single();
+    let existingId: string | undefined;
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      if (checkError.message?.includes('AbortError') || checkError.message?.includes('signal is aborted')) {
-        return false;
-      }
-      console.error('Error checking existing product:', checkError);
-      return false;
+    // 1. Try to match by ID if it's a UUID (Supabase ID)
+    // UUID regex basic check or just length > 20
+    if (product.Id && product.Id.length > 20) {
+      existingId = product.Id;
     }
 
-    if (existingProduct) {
-      // Update existing product by slug
+    // 2. If no ID match candidate, check by Slug
+    if (!existingId) {
+      const { data: existingBySlug, error: checkError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('slug', product.slug)
+        .single();
+
+      if (!checkError && existingBySlug) {
+        existingId = existingBySlug.id;
+      }
+    }
+
+    if (existingId) {
+      // Update existing product
       const { error } = await supabase
         .from('products')
         .update(productData)
-        .eq('slug', product.slug);
+        .eq('id', existingId);
 
       if (error) {
         console.error('Error updating product:', error);
-        console.error('Product data:', productData);
         return false;
       }
     } else {
       // Insert new product
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('products')
         .insert([productData])
         .select();
 
       if (error) {
         console.error('Error inserting product:', error);
-        console.error('Product data:', productData);
         return false;
       }
     }

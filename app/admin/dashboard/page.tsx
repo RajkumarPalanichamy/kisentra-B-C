@@ -26,20 +26,40 @@ const AdminDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    // Load products from localStorage or use default
-    const savedProducts = localStorage.getItem('adminProducts');
-    const products: Product[] = savedProducts ? JSON.parse(savedProducts) : Products;
+    const loadStats = async () => {
+      // 1. Load local for immediate render
+      const savedProducts = localStorage.getItem('adminProducts');
+      let products: Product[] = savedProducts ? JSON.parse(savedProducts) : Products;
 
-    const totalValue = products.reduce((sum, p) => sum + p.price, 0);
-    const inStock = products.filter(p => p.inStock).length;
-    const outOfStock = products.filter(p => !p.inStock).length;
+      const updateStats = (prods: Product[]) => {
+        const totalValue = prods.reduce((sum, p) => sum + p.price, 0);
+        const inStock = prods.filter(p => p.inStock).length;
+        const outOfStock = prods.filter(p => !p.inStock).length;
+        setStats({
+          totalProducts: prods.length,
+          totalValue,
+          inStock,
+          outOfStock
+        });
+      };
 
-    setStats({
-      totalProducts: products.length,
-      totalValue,
-      inStock,
-      outOfStock
-    });
+      updateStats(products);
+
+      // 2. Fetch fresh data
+      try {
+        const { getProductsFromSupabaseAsync } = await import('@/api/products');
+        const remoteProducts = await getProductsFromSupabaseAsync();
+        if (remoteProducts) {
+          updateStats(remoteProducts);
+          // Update cache
+          localStorage.setItem('adminProducts', JSON.stringify(remoteProducts));
+        }
+      } catch (error) {
+        console.error("Failed to update dashboard stats", error);
+      }
+    };
+
+    loadStats();
   }, []);
 
   // Don't render if loading or not authenticated (layout will handle redirect)

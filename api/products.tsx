@@ -45,14 +45,17 @@ export const getProducts = (): Product[] => {
 // Async version to load from Supabase (called after mount)
 export const getProductsFromSupabaseAsync = async (): Promise<Product[] | null> => {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const { isSupabaseConfigured } = await import('@/lib/supabase');
     if (isSupabaseConfigured()) {
       const { getProductsFromSupabase } = await import('./products-supabase');
       return await getProductsFromSupabase();
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.message?.includes('signal is aborted')) {
+      return null;
+    }
     console.error('Error loading from Supabase:', error);
   }
   return null;
@@ -61,24 +64,68 @@ export const getProductsFromSupabaseAsync = async (): Promise<Product[] | null> 
 // Function to save products to Supabase or localStorage
 export const saveProducts = async (products: Product[]): Promise<void> => {
   if (typeof window !== 'undefined') {
-    // Always save to localStorage as backup
     localStorage.setItem('adminProducts', JSON.stringify(products));
 
-    // Try to sync to Supabase if configured (in background, don't block)
+    // Try to sync to Supabase if configured (in background)
     getProductsFromSupabaseAsync().then(() => {
-      // Supabase is available, sync products
       import('./products-supabase').then(({ saveProductToSupabase }) => {
         products.forEach(product => {
           saveProductToSupabase(product).catch(err => {
             console.error('Error syncing product to Supabase:', err);
           });
         });
-      }).catch(() => {
-        // Supabase not available, continue with localStorage only
+      }).catch(() => { });
+    }).catch(() => { });
+  }
+};
+
+// Save a single product
+export const saveProduct = async (product: Product): Promise<void> => {
+  if (typeof window !== 'undefined') {
+    // Update local storage
+    const savedProducts = localStorage.getItem('adminProducts');
+    let products: Product[] = savedProducts ? JSON.parse(savedProducts) : Products;
+
+    const index = products.findIndex(p => p.Id === product.Id);
+    if (index >= 0) {
+      products[index] = product;
+    } else {
+      products.push(product);
+    }
+    localStorage.setItem('adminProducts', JSON.stringify(products));
+
+    // Sync to Supabase
+    const { isSupabaseConfigured } = await import('@/lib/supabase');
+    if (isSupabaseConfigured()) {
+      import('./products-supabase').then(({ saveProductToSupabase }) => {
+        saveProductToSupabase(product).then((success) => {
+          if (!success) console.error('Failed to save product to Supabase');
+        });
       });
-    }).catch(() => {
-      // Supabase not configured, continue with localStorage only
-    });
+    }
+  }
+};
+
+// Delete a product
+export const deleteProduct = async (productId: string): Promise<void> => {
+  if (typeof window !== 'undefined') {
+    // Update local storage
+    const savedProducts = localStorage.getItem('adminProducts');
+    if (savedProducts) {
+      const products: Product[] = JSON.parse(savedProducts);
+      const updatedProducts = products.filter(p => p.Id !== productId);
+      localStorage.setItem('adminProducts', JSON.stringify(updatedProducts));
+    }
+
+    // Sync to Supabase
+    const { isSupabaseConfigured } = await import('@/lib/supabase');
+    if (isSupabaseConfigured()) {
+      import('./products-supabase').then(({ deleteProductFromSupabase }) => {
+        deleteProductFromSupabase(productId).then((success) => {
+          if (!success) console.error('Failed to delete product from Supabase');
+        });
+      });
+    }
   }
 };
 

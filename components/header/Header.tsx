@@ -11,90 +11,37 @@ import MobileMenu from '../MobileMenu/MobileMenu';
 import MegaMenu1 from './MegaMenu1';
 import MegaMenu2 from './MegaMenu2';
 import { useCart } from '@/contexts/CartContext';
+import { useUser } from '@/contexts/UserContext';
 import LoginModal from '@/components/auth/LoginModal';
 
 const Header: React.FC = () => {
   const router = useRouter();
   const [mobailActive, setMobailState] = useState(false);
   const [isSticky, setSticky] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading, signOut } = useUser();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { getTotalItems } = useCart();
 
   useEffect(() => {
-    let isMounted = true;
-
-    // Check auth status
-    const checkUser = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (!isMounted) return;
-
-        if (error) {
-          // Ignore session errors if they are aborts or similar
-          return;
-        }
-
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-
-        // Automatically show login modal if user is not logged in AND hasn't seen it yet
-        if (!currentUser) {
-          const hasSeenModal = sessionStorage.getItem('hasSeenLoginModal');
-
-          if (!hasSeenModal) {
-            // Small delay to ensure smooth entry
-            setTimeout(() => {
-              if (isMounted) {
-                setShowLoginModal(true);
-                sessionStorage.setItem('hasSeenLoginModal', 'true');
-              }
-            }, 1000); // 1-second delay for better UX
-          }
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.message?.includes('aborted')) return;
-        console.error('Error checking user session:', err);
+    // Automatically show login modal if user is not logged in AND hasn't seen it yet
+    // Only run this once when loading finishes and we know user is not logged in
+    if (!isLoading && !user) {
+      const hasSeenModal = sessionStorage.getItem('hasSeenLoginModal');
+      if (!hasSeenModal) {
+        // Small delay to ensure smooth entry
+        setTimeout(() => {
+          setShowLoginModal(true);
+          sessionStorage.setItem('hasSeenLoginModal', 'true');
+        }, 1000);
       }
-    };
-
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) {
-        setUser(session?.user ?? null);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+    }
+  }, [isLoading, user]);
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        // Still redirect even if there's an error
-      }
-      // Clear user state immediately
-      setUser(null);
-      // Redirect to home page
-      router.push('/');
-      router.refresh();
-      // Force a page reload to ensure state is cleared
-      window.location.href = '/';
-    } catch (err) {
-      console.error('Logout failed:', err);
-      // Force logout by clearing local state and redirecting
-      setUser(null);
-      window.location.href = '/';
-    }
+    await signOut();
+    // Redirect is handled in signOut but we can ensure menu closes
+    setShowUserMenu(false);
   };
 
   useEffect(() => {
@@ -197,7 +144,6 @@ const Header: React.FC = () => {
                     <li className="menu-item-has-children">
                       <Link href="/products" className="nav-link">
                         <span>Shop</span>
-                        <i className="far fa-angle-down" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
                       </Link>
                       <ul className="submenu">
                         <li><Link href="/products"><span>All Products</span></Link></li>
@@ -361,7 +307,15 @@ const Header: React.FC = () => {
                 </Link>
 
                 {/* User Menu */}
-                {user ? (
+                {isLoading ? (
+                  <div style={{
+                    width: '100px',
+                    height: '40px',
+                    backgroundColor: '#f6f6f8',
+                    borderRadius: '8px',
+                    animation: 'pulse 1.5s infinite'
+                  }}></div>
+                ) : user ? (
                   <div className="user-menu-wrapper" style={{ position: 'relative' }}>
                     <button
                       type="button"
@@ -435,6 +389,30 @@ const Header: React.FC = () => {
                             {user.email}
                           </div>
                         </div>
+                        <Link
+                          href="/profile"
+                          onClick={() => setShowUserMenu(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '12px 16px',
+                            textDecoration: 'none',
+                            color: 'var(--color-heading)',
+                            fontSize: '14px',
+                            transition: 'all 0.2s ease',
+                            borderBottom: '1px solid #eee'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f6f6f8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <i className="fas fa-user-circle" style={{ width: '16px' }}></i>
+                          <span>My Profile</span>
+                        </Link>
                         <Link
                           href="/cart"
                           onClick={() => setShowUserMenu(false)}

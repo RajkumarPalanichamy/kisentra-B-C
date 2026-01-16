@@ -52,10 +52,8 @@ const AuthPage: React.FC = () => {
           }
         } else if (data.user) {
           setMessage('Successfully logged in!');
-          setTimeout(() => {
-            router.push('/');
-            router.refresh();
-          }, 1000);
+          router.push('/');
+          router.refresh();
         }
       } else {
         // Sign up

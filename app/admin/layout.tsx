@@ -156,20 +156,47 @@ const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children 
               <i className="fas fa-box" style={{ marginRight: '10px' }}></i>
               Products
             </Link>
+            <Link href="/admin/categories" className={`nav-link ${pathname === '/admin/categories' ? 'active' : ''}`} style={{
+              color: pathname === '/admin/categories' ? '#333' : '#666',
+              padding: '12px 15px',
+              borderRadius: '8px',
+              marginBottom: '5px',
+              backgroundColor: pathname === '/admin/categories' ? '#f0f0f0' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontWeight: '500'
+            }}>
+              <i className="far fa-tags" style={{ width: '20px' }}></i> Categories
+            </Link>
+
+            <Link href="/admin/banners" className={`nav-link ${pathname === '/admin/banners' ? 'active' : ''}`} style={{
+              color: pathname === '/admin/banners' ? '#333' : '#666',
+              padding: '12px 15px',
+              borderRadius: '8px',
+              marginBottom: '5px',
+              backgroundColor: pathname === '/admin/banners' ? '#f0f0f0' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontWeight: '500'
+            }}>
+              <i className="far fa-images" style={{ width: '20px' }}></i> Banners
+            </Link>
             <Link
-              href="/admin/categories"
+              href="/admin/profile"
               style={{
                 display: 'block',
                 padding: '12px 30px',
-                color: pathname === '/admin/categories' ? 'var(--color-primary-two)' : 'var(--color-heading)',
+                color: pathname === '/admin/profile' ? 'var(--color-primary-two)' : 'var(--color-heading)',
                 textDecoration: 'none',
-                fontWeight: pathname === '/admin/categories' ? '600' : '400',
-                backgroundColor: pathname === '/admin/categories' ? '#f6f6f8' : 'transparent',
-                borderLeft: pathname === '/admin/categories' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
+                fontWeight: pathname === '/admin/profile' ? '600' : '400',
+                backgroundColor: pathname === '/admin/profile' ? '#f6f6f8' : 'transparent',
+                borderLeft: pathname === '/admin/profile' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
               }}
             >
-              <i className="fas fa-tags" style={{ marginRight: '10px' }}></i>
-              Categories
+              <i className="fas fa-user-circle" style={{ marginRight: '10px' }}></i>
+              Profile
             </Link>
           </nav>
         </aside>

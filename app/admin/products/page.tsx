@@ -37,22 +37,41 @@ const AdminProductsPage: React.FC = () => {
     }
   }, [searchParams, isAuthenticated]);
 
-  const loadProducts = () => {
+  const loadProducts = async () => {
+    // Load local first for speed
     const loadedProducts = getProducts();
     setProducts(loadedProducts);
+
+    // Then try to fetch fresh data from server
+    try {
+      const { getProductsFromSupabaseAsync } = await import('@/api/products');
+      const remoteProducts = await getProductsFromSupabaseAsync();
+      if (remoteProducts) {
+        setProducts(remoteProducts);
+        // Also update local cache
+        localStorage.setItem('adminProducts', JSON.stringify(remoteProducts));
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.message?.includes('signal is aborted')) {
+        return;
+      }
+      console.error("Failed to load remote products", error);
+    }
   };
 
-  const handleSave = (productData: Partial<Product>) => {
+  const handleSave = async (productData: Partial<Product>) => {
+    let newProduct: Product;
     let updatedProducts: Product[];
 
     if (editingProduct) {
       // Update existing product
+      newProduct = { ...editingProduct, ...productData } as Product;
       updatedProducts = products.map(p =>
-        p.Id === editingProduct.Id ? { ...p, ...productData } : p
+        p.Id === editingProduct.Id ? newProduct : p
       );
     } else {
       // Add new product
-      const newProduct: Product = {
+      newProduct = {
         Id: Date.now().toString(),
         title: productData.title || '',
         slug: productData.slug || productData.title?.toLowerCase().replace(/\s+/g, '-') || '',
@@ -72,26 +91,43 @@ const AdminProductsPage: React.FC = () => {
       updatedProducts = [...products, newProduct];
     }
 
-    saveProducts(updatedProducts);
+    // Optimistic UI update
     setProducts(updatedProducts);
     setShowForm(false);
     setEditingProduct(null);
     router.push('/admin/products');
+
+    // Save properly
+    const { saveProduct } = await import('@/api/products');
+    await saveProduct(newProduct);
   };
 
-  const handleDelete = (productId: string) => {
+  const handleDelete = async (productId: string) => {
+    // Optimistic UI update
     const updatedProducts = products.filter(p => p.Id !== productId);
-    saveProducts(updatedProducts);
     setProducts(updatedProducts);
     setDeleteConfirm(null);
+
+    // API call
+    const { deleteProduct } = await import('@/api/products');
+    await deleteProduct(productId);
   };
 
-  const handleToggleVisibility = (productId: string) => {
+  const handleToggleVisibility = async (productId: string) => {
+    const product = products.find(p => p.Id === productId);
+    if (!product) return;
+
+    const updatedProduct = { ...product, visible: !product.visible };
     const updatedProducts = products.map(p =>
-      p.Id === productId ? { ...p, visible: !p.visible } : p
+      p.Id === productId ? updatedProduct : p
     );
-    saveProducts(updatedProducts);
+
+    // Optimistic update
     setProducts(updatedProducts);
+
+    // Save
+    const { saveProduct } = await import('@/api/products');
+    await saveProduct(updatedProduct);
   };
 
   // Don't render if loading or not authenticated (layout will handle redirect)
@@ -365,9 +401,10 @@ const ProductForm: React.FC<{
   onCancel: () => void;
 }> = ({ product, onSave, onCancel }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [activeTab, setActiveTab] = useState<'general' | 'details' | 'media' | 'attributes'>('general');
 
   useEffect(() => {
-    getCategories().then(setCategories);
+    getCategories().then(setCategories).catch(() => { });
   }, []);
 
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -388,14 +425,30 @@ const ProductForm: React.FC<{
 
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const validate = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.title) newErrors.title = 'Title is required';
+    if (!formData.price || formData.price <= 0) newErrors.price = 'Price must be greater than 0';
+    if (!formData.category) newErrors.category = 'Category is required';
+    if (!formData.images || formData.images.length === 0) newErrors.images = 'At least one image is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.price || !formData.category) {
-      alert('Please fill in all required fields');
-      return;
+    if (validate()) {
+      onSave(formData);
+    } else {
+      // Find the tab with the first error and switch to it
+      if (errors.title || errors.category || errors.price) setActiveTab('general');
+      else if (errors.images) setActiveTab('media');
+
+      alert('Please fix the errors before saving.');
     }
-    onSave(formData);
   };
 
   const addFeature = () => {
@@ -495,6 +548,55 @@ const ProductForm: React.FC<{
     }
   };
 
+  const InputLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--color-heading)', fontSize: '14px' }}>
+      {children}
+      {required && <span style={{ color: '#ff4d4f', marginLeft: '4px' }}>*</span>}
+    </label>
+  );
+
+  const StyledInput = (props: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
+    <div>
+      <input
+        {...props}
+        style={{
+          width: '100%',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
+          fontSize: '15px',
+          outline: 'none',
+          transition: 'border-color 0.2s',
+          backgroundColor: '#fff'
+        }}
+        onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
+        onBlur={(e) => e.target.style.borderColor = props.error ? '#ff4d4f' : '#e7e8ec'}
+      />
+      {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
+    </div>
+  );
+
+  const StyledSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
+    <div>
+      <select
+        {...props}
+        style={{
+          width: '100%',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
+          fontSize: '15px',
+          outline: 'none',
+          backgroundColor: '#fff',
+          cursor: 'pointer'
+        }}
+      >
+        {props.children}
+      </select>
+      {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -503,540 +605,577 @@ const ProductForm: React.FC<{
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(5px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
         padding: '20px',
-        overflowY: 'auto'
+        animation: 'fadeIn 0.3s ease-out'
       }}
       onClick={(e) => {
-        // Close modal when clicking on backdrop
-        if (e.target === e.currentTarget) {
-          onCancel();
-        }
+        if (e.target === e.currentTarget) onCancel();
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: '#fff',
-          padding: '40px',
-          borderRadius: '15px',
-          maxWidth: '800px',
+          borderRadius: '20px',
+          maxWidth: '900px',
           width: '100%',
           maxHeight: '90vh',
-          overflowY: 'auto',
-          position: 'relative'
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
+          animation: 'slideUp 0.3s ease-out'
         }}>
+
+        {/* Header */}
         <div style={{
+          padding: '25px 30px',
+          borderBottom: '1px solid #eee',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '30px'
+          backgroundColor: '#fcfcfc',
+          borderTopLeftRadius: '20px',
+          borderTopRightRadius: '20px'
         }}>
-          <h2 style={{ fontSize: '24px', margin: 0 }}>
-            {product ? 'Edit Product' : 'Add New Product'}
-          </h2>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: 'var(--color-heading)' }}>
+              {product ? 'Edit Product' : 'Add New Product'}
+            </h2>
+            <p style={{ margin: '5px 0 0', color: 'var(--color-default)', fontSize: '14px' }}>
+              Fill in the details below to {product ? 'update' : 'create'} your product.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onCancel}
             style={{
-              background: 'none',
+              background: '#f1f1f1',
               border: 'none',
-              fontSize: '28px',
-              color: 'var(--color-default)',
-              cursor: 'pointer',
-              padding: '5px 10px',
-              lineHeight: '1',
-              transition: 'color 0.3s ease',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#f6f6f8'
+              cursor: 'pointer',
+              color: '#666',
+              transition: 'all 0.2s',
+              fontSize: '18px'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--color-heading)';
-              e.currentTarget.style.backgroundColor = '#e7e8ec';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--color-default)';
-              e.currentTarget.style.backgroundColor = '#f6f6f8';
-            }}
-            aria-label="Close"
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e1e1e1'; e.currentTarget.style.color = '#333'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f1f1f1'; e.currentTarget.style.color = '#666'; }}
           >
-            ×
+            <i className="fas fa-times"></i>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Product Title *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    title: e.target.value,
-                    slug: e.target.value.toLowerCase().replace(/\s+/g, '-')
-                  });
-                }}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
+        {/* Tabs */}
+        <div style={{
+          display: 'flex',
+          padding: '0 30px',
+          borderBottom: '1px solid #eee',
+          backgroundColor: '#fff'
+        }}>
+          {[
+            { id: 'general', label: 'General Info', icon: 'fa-info-circle' },
+            { id: 'details', label: 'Details', icon: 'fa-align-left' },
+            { id: 'media', label: 'Media', icon: 'fa-images' },
+            { id: 'attributes', label: 'Attributes & Metadata', icon: 'fa-list-ul' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              style={{
+                padding: '18px 20px',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === tab.id ? '2px solid var(--color-primary-two)' : '2px solid transparent',
+                color: activeTab === tab.id ? 'var(--color-primary-two)' : '#666',
+                fontWeight: activeTab === tab.id ? '700' : '500',
+                cursor: 'pointer',
+                fontSize: '15px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
+              <i className={`fas ${tab.icon}`}></i>
+              {tab.label}
+              {tab.id === 'general' && (errors.title || errors.price || errors.category) &&
+                <span style={{ width: '6px', height: '6px', backgroundColor: '#ff4d4f', borderRadius: '50%', display: 'inline-block', marginBottom: '8px' }}></span>}
+              {tab.id === 'media' && errors.images &&
+                <span style={{ width: '6px', height: '6px', backgroundColor: '#ff4d4f', borderRadius: '50%', display: 'inline-block', marginBottom: '8px' }}></span>}
+            </button>
+          ))}
+        </div>
 
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Slug *
-              </label>
-              <input
-                type="text"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
+        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ padding: '30px' }}>
 
-            <div className="col-12 mb-30">
-              <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
-                Product Images *
-              </label>
-              <div
-                style={{
-                  border: '2px dashed #e0e0e0',
-                  borderRadius: '10px',
-                  padding: '30px',
-                  textAlign: 'center',
-                  backgroundColor: '#f8f9fa',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  position: 'relative'
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.style.borderColor = 'var(--color-primary-two)';
-                  e.currentTarget.style.backgroundColor = '#f0f7ff';
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.style.borderColor = '#e0e0e0';
-                  e.currentTarget.style.backgroundColor = '#f8f9fa';
-                }}
-                onDrop={handleDragDrop}
-                onClick={() => document.getElementById('product-image-upload')?.click()}
-              >
-                <input
-                  type="file"
-                  id="product-image-upload"
-                  multiple
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={handleFileSelect}
-                />
-                <i className="fas fa-cloud-upload-alt" style={{ fontSize: '40px', color: '#bdbdbd', marginBottom: '15px' }}></i>
-                <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#424242' }}>
-                  Drag & Drop images here
-                </h4>
-                <p style={{ color: '#9e9e9e', fontSize: '13px', margin: 0 }}>
-                  or <span style={{ color: 'var(--color-primary-two)', fontWeight: '600' }}>Browse Files</span>
-                </p>
-              </div>
-
-              {/* Image Previews */}
-              {formData.images && formData.images.length > 0 && (
-                <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
-                  {formData.images.map((img, index) => (
-                    <div key={index} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                      <img
-                        src={typeof img === 'string' ? img : (img as any).src}
-                        alt={`Preview ${index}`}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            images: prev.images?.filter((_, i) => i !== index)
-                          }));
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: '5px',
-                          right: '5px',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          backgroundColor: 'rgba(255,255,255,0.9)',
-                          border: 'none',
-                          color: '#ff4d4f',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#ff4d4f';
-                          e.currentTarget.style.color = '#fff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)';
-                          e.currentTarget.style.color = '#ff4d4f';
-                        }}
-                      >
-                        ×
-                      </button>
-                      {index === 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          color: '#fff',
-                          fontSize: '10px',
-                          padding: '4px',
-                          textAlign: 'center',
-                          fontWeight: '600'
-                        }}>
-                          Cover Image
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            {/* General Tab */}
+            {activeTab === 'general' && (
+              <div className="row">
+                <div className="col-12 mb-30">
+                  <InputLabel required>Product Title</InputLabel>
+                  <StyledInput
+                    type="text"
+                    placeholder="e.g. Premium Business Consultation"
+                    value={formData.title}
+                    error={errors.title}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        title: e.target.value,
+                        slug: !product ? e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : formData.slug
+                      });
+                      if (errors.title) setErrors({ ...errors, title: '' });
+                    }}
+                  />
                 </div>
-              )}
 
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Price *
-              </label>
-              <input
-                type="number"
-                value={formData.price ?? ''}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setFormData({ ...formData, price: isNaN(val) ? undefined : val });
-                }}
-                required
-                min="0"
-                step="0.01"
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Original Price
-              </label>
-              <input
-                type="number"
-                value={formData.originalPrice ?? ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  originalPrice: e.target.value ? parseFloat(e.target.value) : undefined
-                })}
-                min="0"
-                step="0.01"
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Category *
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id || cat.slug} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Rating
-              </label>
-              <input
-                type="number"
-                value={formData.rating ?? ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  rating: e.target.value ? parseFloat(e.target.value) : undefined
-                })}
-                min="0"
-                max="5"
-                step="0.1"
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-
-            <div className="col-12 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Description *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                required
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px',
-                  fontFamily: 'var(--font-body)'
-                }}
-              />
-            </div>
-
-            <div className="col-12 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Long Description
-              </label>
-              <textarea
-                value={formData.longDescription}
-                onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
-                rows={5}
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '7px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '16px',
-                  fontFamily: 'var(--font-body)'
-                }}
-              />
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.inStock}
-                  onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <span>In Stock</span>
-              </label>
-            </div>
-
-            <div className="col-md-6 mb-20">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.visible !== false}
-                  onChange={(e) => setFormData({ ...formData, visible: e.target.checked })}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <span>Visible on Storefront</span>
-              </label>
-            </div>
-
-            <div className="col-12 mb-20">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Features
-              </label>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <input
-                  type="text"
-                  value={newFeature}
-                  onChange={(e) => setNewFeature(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                  placeholder="Add feature"
-                  style={{
-                    flex: 1,
-                    padding: '10px 15px',
-                    borderRadius: '7px',
-                    border: '1px solid #e7e8ec',
-                    fontSize: '14px'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={addFeature}
-                  className="thm-btn thm-btn--border"
-                  style={{ padding: '10px 20px' }}
-                >
-                  Add
-                </button>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {formData.features?.map((feature, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      padding: '5px 12px',
-                      backgroundColor: '#f6f6f8',
-                      borderRadius: '5px',
-                      fontSize: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    {feature}
+                <div className="col-12 mb-30">
+                  <InputLabel required>URL Slug</InputLabel>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <StyledInput
+                      type="text"
+                      value={formData.slug}
+                      placeholder="premium-business-consultation"
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    />
                     <button
                       type="button"
-                      onClick={() => removeFeature(index)}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        cursor: 'pointer',
-                        color: '#c62828',
-                        padding: 0,
-                        fontSize: '14px'
-                      }}
+                      className="thm-btn thm-btn--border"
+                      onClick={() => setFormData({ ...formData, slug: formData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '' })}
+                      title="Generate from Title"
+                      style={{ padding: '0 20px', whiteSpace: 'nowrap' }}
                     >
-                      ×
+                      <i className="fas fa-sync-alt"></i>
                     </button>
-                  </span>
-                ))}
-              </div>
-            </div>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
+                    The localized friendly part of the URL. Must be unique.
+                  </p>
+                </div>
 
-            <div className="col-12 mb-30">
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Tags
-              </label>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  placeholder="Add tag"
-                  style={{
-                    flex: 1,
-                    padding: '10px 15px',
-                    borderRadius: '7px',
-                    border: '1px solid #e7e8ec',
-                    fontSize: '14px'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="thm-btn thm-btn--border"
-                  style={{ padding: '10px 20px' }}
-                >
-                  Add
-                </button>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {formData.tags?.map((tag, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      padding: '5px 12px',
-                      backgroundColor: '#f6f6f8',
-                      borderRadius: '5px',
-                      fontSize: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
+                <div className="col-md-6 mb-30">
+                  <InputLabel required>Price ($)</InputLabel>
+                  <StyledInput
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    value={formData.price || ''}
+                    error={errors.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+
+                <div className="col-md-6 mb-30">
+                  <InputLabel>Original Price ($)</InputLabel>
+                  <StyledInput
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    value={formData.originalPrice || ''}
+                    onChange={(e) => setFormData({ ...formData, originalPrice: parseFloat(e.target.value) || undefined })}
+                  />
+                  <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
+                    Set higher than price to show a discount.
+                  </p>
+                </div>
+
+                <div className="col-md-12 mb-30">
+                  <InputLabel required>Category</InputLabel>
+                  <StyledSelect
+                    value={formData.category}
+                    error={errors.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   >
-                    {tag}
+                    <option value="">Select a Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </StyledSelect>
+                </div>
+              </div>
+            )}
+
+            {/* Details Tab */}
+            {activeTab === 'details' && (
+              <div className="row">
+                <div className="col-12 mb-30">
+                  <InputLabel required>Short Description</InputLabel>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      border: '1px solid #e7e8ec',
+                      fontSize: '15px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
+                    onBlur={(e) => e.target.style.borderColor = '#e7e8ec'}
+                    placeholder="Brief summary of the product (1-2 sentences)"
+                  />
+                </div>
+
+                <div className="col-12 mb-30">
+                  <InputLabel>Long Description</InputLabel>
+                  <textarea
+                    rows={10}
+                    value={formData.longDescription}
+                    onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      border: '1px solid #e7e8ec',
+                      fontSize: '15px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      outline: 'none',
+                      lineHeight: '1.6'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
+                    onBlur={(e) => e.target.style.borderColor = '#e7e8ec'}
+                    placeholder="Detailed description of the product..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Media Tab */}
+            {activeTab === 'media' && (
+              <div>
+                <div className="mb-30">
+                  <InputLabel required>Product Images</InputLabel>
+                  <div
+                    style={{
+                      border: `2px dashed ${errors.images ? '#ff4d4f' : '#e0e0e0'}`,
+                      borderRadius: '12px',
+                      padding: '40px',
+                      textAlign: 'center',
+                      backgroundColor: '#f8f9fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      position: 'relative'
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.style.borderColor = 'var(--color-primary-two)';
+                      e.currentTarget.style.backgroundColor = '#f0f7ff';
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.style.borderColor = '#e0e0e0';
+                      e.currentTarget.style.backgroundColor = '#f8f9fa';
+                    }}
+                    onDrop={handleDragDrop}
+                    onClick={() => document.getElementById('product-image-upload')?.click()}
+                  >
+                    <input
+                      type="file"
+                      id="product-image-upload"
+                      multiple
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleFileSelect}
+                    />
+                    <div style={{
+                      width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#fff',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px',
+                      boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
+                    }}>
+                      <i className="fas fa-cloud-upload-alt" style={{ fontSize: '24px', color: 'var(--color-primary-two)' }}></i>
+                    </div>
+                    <h4 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: '#424242' }}>
+                      Click or Drag & Drop to Upload
+                    </h4>
+                    <p style={{ color: '#888', fontSize: '14px', margin: 0 }}>
+                      Supported formats: JPG, PNG, WEBP
+                    </p>
+                  </div>
+                  {errors.images && <div style={{ color: '#ff4d4f', fontSize: '13px', marginTop: '8px' }}>{errors.images}</div>}
+                </div>
+
+                {/* Image Grid */}
+                {formData.images && formData.images.length > 0 && (
+                  <div>
+                    <h5 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px' }}>Uploaded Images ({formData.images.length})</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '15px' }}>
+                      {formData.images.map((img, index) => (
+                        <div key={index} style={{
+                          position: 'relative',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          border: '1px solid #eee',
+                          aspectRatio: '1/1',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}>
+                          <img
+                            src={typeof img === 'string' ? img : (img as any).src}
+                            alt={`Preview ${index}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          {/* Actions Overlay */}
+                          <div className="image-overlay" style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.4)', opacity: 0, transition: 'opacity 0.2s',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newImages = [...(formData.images || [])];
+                                newImages.splice(index, 1);
+                                setFormData({ ...formData, images: newImages });
+                              }}
+                              style={{
+                                background: '#fff', border: 'none', width: '30px', height: '30px',
+                                borderRadius: '50%', color: '#ff4d4f', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                          {index === 0 && (
+                            <div style={{
+                              position: 'absolute', bottom: '0', left: '0', right: '0',
+                              background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '11px',
+                              padding: '4px', textAlign: 'center', fontWeight: '600'
+                            }}>
+                              Main Image
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Attributes Tab */}
+            {activeTab === 'attributes' && (
+              <div className="row">
+                <div className="col-md-6 mb-30">
+                  <InputLabel>Rating (0-5)</InputLabel>
+                  <StyledInput
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    placeholder="4.5"
+                    value={formData.rating || ''}
+                    onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) || undefined })}
+                  />
+                </div>
+
+                <div className="col-md-6 mb-30">
+                  <InputLabel>Review Count</InputLabel>
+                  <StyledInput
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.reviews || ''}
+                    onChange={(e) => setFormData({ ...formData, reviews: parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+
+                <div className="col-12 mb-30">
+                  <div style={{ display: 'flex', gap: '30px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                      <div style={{
+                        width: '44px', height: '24px', backgroundColor: formData.inStock ? '#4caf50' : '#ddd',
+                        borderRadius: '12px', position: 'relative', transition: 'background-color 0.2s'
+                      }}>
+                        <div style={{
+                          width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%',
+                          position: 'absolute', top: '2px', left: formData.inStock ? '22px' : '2px',
+                          transition: 'left 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }} />
+                        <input
+                          type="checkbox"
+                          checked={formData.inStock}
+                          onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
+                      <span style={{ fontWeight: '600', color: 'var(--color-heading)' }}>In Stock</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                      <div style={{
+                        width: '44px', height: '24px', backgroundColor: formData.visible !== false ? '#2196f3' : '#ddd',
+                        borderRadius: '12px', position: 'relative', transition: 'background-color 0.2s'
+                      }}>
+                        <div style={{
+                          width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%',
+                          position: 'absolute', top: '2px', left: formData.visible !== false ? '22px' : '2px',
+                          transition: 'left 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }} />
+                        <input
+                          type="checkbox"
+                          checked={formData.visible !== false}
+                          onChange={(e) => setFormData({ ...formData, visible: e.target.checked })}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
+                      <span style={{ fontWeight: '600', color: 'var(--color-heading)' }}>Visible on Store</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="col-12 mb-30">
+                  <InputLabel>Features</InputLabel>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <input
+                      type="text"
+                      value={newFeature}
+                      placeholder="Add a product feature (e.g. 'Wireless Charging')"
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                      style={{
+                        flex: 1, padding: '12px 15px', borderRadius: '8px', border: '1px solid #e7e8ec', fontSize: '15px', outline: 'none'
+                      }}
+                    />
                     <button
                       type="button"
-                      onClick={() => removeTag(index)}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        cursor: 'pointer',
-                        color: '#c62828',
-                        padding: 0,
-                        fontSize: '14px'
-                      }}
+                      onClick={addFeature}
+                      className="thm-btn"
+                      style={{ padding: '0 25px', borderRadius: '8px' }}
                     >
-                      ×
+                      Add
                     </button>
-                  </span>
-                ))}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {formData.features?.map((feature, index) => (
+                      <div key={index} style={{
+                        padding: '8px 15px', backgroundColor: '#f0f4f8', color: '#444',
+                        borderRadius: '20px', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px'
+                      }}>
+                        {feature}
+                        <button
+                          type="button"
+                          onClick={() => removeFeature(index)}
+                          style={{ border: 'none', background: 'none', color: '#aaa', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#ff4d4f'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#aaa'}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {(!formData.features || formData.features.length === 0) && (
+                      <span style={{ color: '#999', fontSize: '14px', fontStyle: 'italic' }}>No features added yet.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-12 mb-20">
+                  <InputLabel>Tags</InputLabel>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <input
+                      type="text"
+                      value={newTag}
+                      placeholder="Add a search tag (e.g. 'bestseller')"
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                      style={{
+                        flex: 1, padding: '12px 15px', borderRadius: '8px', border: '1px solid #e7e8ec', fontSize: '15px', outline: 'none'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addTag}
+                      className="thm-btn thm-btn--border"
+                      style={{ padding: '0 25px', borderRadius: '8px' }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {formData.tags?.map((tag, index) => (
+                      <div key={index} style={{
+                        padding: '6px 12px', backgroundColor: '#fff', border: '1px solid #e7e8ec', color: '#666',
+                        borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
+                      }}>
+                        # {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(index)}
+                          style={{ border: 'none', background: 'none', color: '#ccc', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#ff4d4f'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#ccc'}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
+          {/* Footer */}
+          <div style={{
+            padding: '20px 30px',
+            borderTop: '1px solid #eee',
+            backgroundColor: '#fcfcfc',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '15px',
+            borderBottomLeftRadius: '20px',
+            borderBottomRightRadius: '20px'
+          }}>
             <button
               type="button"
               onClick={onCancel}
               className="thm-btn thm-btn--border"
+              style={{ padding: '12px 30px', borderRadius: '8px' }}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="thm-btn thm-btn--aso thm-btn--aso_yellow"
+              style={{ padding: '12px 30px', borderRadius: '8px' }}
             >
-              {product ? 'Update Product' : 'Add Product'}
+              {product ? 'Save Changes' : 'Create Product'}
             </button>
           </div>
-        </form >
-      </div >
-    </div >
+        </form>
+      </div>
+      <style jsx>{`
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
   );
 };
 
