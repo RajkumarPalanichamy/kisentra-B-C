@@ -99,15 +99,28 @@ const Header: React.FC = () => {
         .nav-link:hover::after {
           width: 100%;
         }
+        /* Ensure main menu is visible on desktop */
+        @media (min-width: 992px) {
+          .main-menu__wrap .navbar-collapse {
+            display: flex !important;
+            visibility: visible !important;
+          }
+        }
+        /* Hide main menu on mobile, show hamburger instead */
+        @media (max-width: 991px) {
+          .main-menu__wrap .navbar-collapse {
+            display: none !important;
+          }
+        }
       `}</style>
       <div id="xb-header-area" className="header-area header-style-two header-transparent">
         {/* Top bar */}
         <div className="header-top">
           <span>
-            Get 15% off on all annual plans until September 30! Join Texpo as we transform SEO 🚀
+            🎉 Free Shipping on Orders Above ₹499! Premium Water Bottles & Tiffin Boxes for Your Daily Needs
           </span>
           <span>
-            <Link href="/">Learn more</Link>
+            <Link href="/products">Shop Now</Link>
             <i className="far fa-angle-right" />
           </span>
           <div className="header-shape">
@@ -132,8 +145,8 @@ const Header: React.FC = () => {
               </div>
 
               {/* Main Menu */}
-              <div className="main-menu__wrap ul_li navbar navbar-expand-xl">
-                <nav className="main-menu collapse navbar-collapse">
+              <div className="main-menu__wrap ul_li navbar navbar-expand-lg">
+                <nav className="main-menu collapse navbar-collapse show">
                   <ul>
                     <li>
                       <Link href="/" className="nav-link">
@@ -187,20 +200,22 @@ const Header: React.FC = () => {
               </div>
 
               {/* Mobile toggle button & Cart */}
-              <div className="header-bar-mobile side-menu d-xl-none ul_li" style={{ gap: '15px', alignItems: 'center' }}>
+              <div className="header-bar-mobile side-menu d-md-none ul_li" style={{ gap: '15px', alignItems: 'center' }}>
                 <Link
                   href="/cart"
                   className="cart-icon"
                   style={{
                     position: 'relative',
-                    padding: '10px 12px',
+                    padding: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     textDecoration: 'none',
                     color: 'var(--color-heading)',
                     borderRadius: '8px',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    width: '40px',
+                    height: '40px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#f6f6f8';
@@ -213,20 +228,24 @@ const Header: React.FC = () => {
                   {getTotalItems() > 0 && (
                     <span style={{
                       position: 'absolute',
-                      top: '5px',
-                      right: '5px',
+                      top: '0px',
+                      right: '0px',
+                      left: 'auto',
                       backgroundColor: 'var(--color-primary-two)',
                       color: '#fff',
                       borderRadius: '50%',
-                      minWidth: '20px',
-                      height: '20px',
+                      minWidth: '18px',
+                      height: '18px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '11px',
+                      fontSize: '10px',
                       fontWeight: '700',
-                      padding: '0 5px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      padding: '0 4px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      lineHeight: '1',
+                      zIndex: 10,
+                      transform: 'translate(30%, -30%)'
                     }}>
                       {getTotalItems()}
                     </span>

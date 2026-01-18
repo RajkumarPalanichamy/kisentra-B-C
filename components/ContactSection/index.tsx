@@ -26,10 +26,10 @@ const ContactSection: React.FC = () => {
                   <div className="xb-item--top">
                     <h3 className="xb-item--title">Contact Info</h3>
                     <span className="xb-item--hotline">
-                      <Image src={icon1} alt="Phone" /> +(1) 1230 452 8597
+                      <Image src={icon1} alt="Phone" /> +91 93929 38283
                     </span>
                     <span className="xb-item--email">
-                      <Image src={icon2} alt="Email" /> innomax@example.com
+                      <Image src={icon2} alt="Email" /> sales@kisentraglobal.com
                     </span>
                     <ul className="social_icons_block list-unstyled ul_li">
                       <li>
@@ -62,18 +62,9 @@ const ContactSection: React.FC = () => {
                   </div>
 
                   <div className="contact-info_widget">
-                    <h3 className="xb-title">United States Office</h3>
+                    <h3 className="xb-title">Our Office</h3>
                     <span className="xb-location">
-                      Sunshine Example Park, Floor <br />
-                      No 05A, Sector-94,
-                    </span>
-                  </div>
-
-                  <div className="contact-info_widget">
-                    <h3 className="xb-title">United Kingdom Office</h3>
-                    <span className="xb-location">
-                      12 Buckingham Rd, Example <br />
-                      Thwaite, HG3 4TY, UK
+                      Coimbatore, Tamil Nadu, India
                     </span>
                   </div>
 

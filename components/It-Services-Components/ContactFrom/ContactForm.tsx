@@ -105,7 +105,7 @@ const ContactForm: React.FC = () => {
               className="form-control"
               onBlur={changeHandler}
               onChange={changeHandler}
-              placeholder="innomax@example.com"
+              placeholder="sales@kisentraglobal.com"
             />
             {validator.current.message('email', forms.email, 'required|email')}
             <div className="img">

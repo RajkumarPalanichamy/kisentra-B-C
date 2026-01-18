@@ -43,19 +43,19 @@ const ContactSection: React.FC = () => {
                       <span>
                         <Image src={icon2} alt="" />
                       </span>
-                      +(1) 1230 452 8597
+                      +91 93929 38283
                     </li>
                     <li>
                       <span className="clr-sky">
                         <Image src={icon3} alt="" />
                       </span>
-                      innomax@gmail.com
+                      sales@kisentraglobal.com
                     </li>
                     <li>
                       <span className="clr-orange">
                         <Image src={icon4} alt="" />
                       </span>
-                      Sunshine example road
+                      Coimbatore, Tamil Nadu, India
                     </li>
                   </ul>
                   <div className="xb-item--img">

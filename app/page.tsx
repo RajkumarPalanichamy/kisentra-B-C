@@ -396,10 +396,10 @@ const HomePage = () => {
             <div className="container">
               <div className="row g-4">
                 {[
-                  { icon: '🚚', title: 'Global Shipping', desc: 'Secure delivery to 100+ countries' },
-                  { icon: '🛡️', title: 'Buyer Protection', desc: 'Full refund if not as described' },
-                  { icon: '🤝', title: '24/7 Support', desc: 'Dedicated support team' },
-                  { icon: '✨', title: 'Quality Promise', desc: 'Handpicked premium items' }
+                  { icon: '🚚', title: 'Free Shipping', desc: 'Free delivery on orders above ₹499' },
+                  { icon: '🛡️', title: 'Quality Guaranteed', desc: 'Premium BPA-free & food-grade materials' },
+                  { icon: '🤝', title: 'Easy Returns', desc: '7-day return policy for your peace of mind' },
+                  { icon: '✨', title: 'Eco-Friendly', desc: 'Sustainable products for a healthier lifestyle' }
                 ].map((benefit, index) => (
                   <div key={index} className="col-xl-3 col-lg-6">
                     <Fade direction="up" triggerOnce duration={600} delay={index * 100}>
@@ -455,9 +455,9 @@ const HomePage = () => {
             <div className="container" style={{ position: 'relative', zIndex: 1 }}>
               <div className="row justify-content-center">
                 <div className="col-lg-8 text-center">
-                  <span style={{ color: 'var(--color-primary-two)', fontWeight: 'bold', letterSpacing: '2px', fontSize: '12px', textTransform: 'uppercase' }}>Join The Community</span>
-                  <h2 style={{ color: '#fff', fontSize: '48px', fontWeight: '800', marginTop: '20px', marginBottom: '20px' }}>Stay Ahead of the Curve</h2>
-                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '50px', fontSize: '18px' }}>Be the first to know about new collections and exclusive events.</p>
+                  <span style={{ color: 'var(--color-primary-two)', fontWeight: 'bold', letterSpacing: '2px', fontSize: '12px', textTransform: 'uppercase' }}>Join Our Newsletter</span>
+                  <h2 style={{ color: '#fff', fontSize: '48px', fontWeight: '800', marginTop: '20px', marginBottom: '20px' }}>Stay Hydrated & Healthy</h2>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '50px', fontSize: '18px' }}>Get exclusive deals on premium water bottles and tiffin boxes. Be the first to know about new arrivals and special offers.</p>
 
                   <div style={{ position: 'relative', maxWidth: '500px', margin: '0 auto' }}>
                     <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', backgroundColor: 'rgba(255,255,255,0.1)', padding: '5px', borderRadius: '50px' }}>

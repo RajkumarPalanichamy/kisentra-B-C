@@ -57,6 +57,53 @@ const CartPage: React.FC = () => {
         <main className="page_content">
           <section className="service pt-140 pb-140">
             <div className="container">
+              {/* Breadcrumb Navigation */}
+              <div className="row mb-20">
+                <div className="col-12">
+                  <nav aria-label="breadcrumb" style={{
+                    marginBottom: '20px',
+                    fontSize: '14px'
+                  }}>
+                    <ol style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      gap: '8px',
+                      alignItems: 'center'
+                    }}>
+                      <li>
+                        <Link href="/" style={{
+                          color: 'var(--color-default)',
+                          textDecoration: 'none',
+                          transition: 'color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          Home
+                        </Link>
+                      </li>
+                      <li style={{ color: 'var(--color-default)' }}>/</li>
+                      <li>
+                        <Link href="/products" style={{
+                          color: 'var(--color-default)',
+                          textDecoration: 'none',
+                          transition: 'color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          Shop
+                        </Link>
+                      </li>
+                      <li style={{ color: 'var(--color-default)' }}>/</li>
+                      <li style={{ color: 'var(--color-heading)', fontWeight: '500' }}>
+                        Shopping Cart
+                      </li>
+                    </ol>
+                  </nav>
+                </div>
+              </div>
               <div className="row mb-40">
                 <div className="col-12">
                   <Fade direction="up" triggerOnce duration={1000}>

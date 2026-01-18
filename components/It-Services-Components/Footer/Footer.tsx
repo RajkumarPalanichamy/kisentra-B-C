@@ -74,17 +74,16 @@ const Footer = () => {
                 <div className="footer-widget">
                   <span className="xb-item--sub-title">Office address</span>
                   <ul className="xb-item--holder list-unstyled">
-                    <li className="xb-item--list"><Link href="/">Texpo gmbH</Link></li>
-                    <li className="xb-item--list"><Link href="/">stefan-george-ring 23</Link></li>
-                    <li className="xb-item--list"><Link href="/">81929 münchen</Link></li>
-                    <li className="xb-item--list"><Link href="/">germany</Link></li>
+                    <li className="xb-item--list"><Link href="/">Coimbatore</Link></li>
+                    <li className="xb-item--list"><Link href="/">Tamil Nadu</Link></li>
+                    <li className="xb-item--list"><Link href="/">India</Link></li>
                   </ul>
                 </div>
                 <div className="footer-info footer-widget">
                   <span className="xb-item--sub-title">Email us</span>
-                  <h4 className="xb-item--email">texpo@gmail.com</h4>
+                  <h4 className="xb-item--email">sales@kisentraglobal.com</h4>
                   <span className="xb-item--sub-title">call us</span>
-                  <h4 className="xb-item--number">+(1) 1230 452 8597</h4>
+                  <h4 className="xb-item--number">+91 93929 38283</h4>
                 </div>
               </div>
               <div className="footer-copyright mt-50 ul_li_between">

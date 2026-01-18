@@ -53,13 +53,13 @@ const Footer: React.FC = () => {
                     <span>
                       <Image src={icon1} alt="Phone icon" />
                     </span>
-                    +618 8967 5983
+                    +91 93929 38283
                   </li>
                   <li className="xb-item--email">
                     <span>
                       <Image src={icon2} alt="Email icon" />
                     </span>
-                    innomax@gmail.com
+                    sales@kisentraglobal.com
                   </li>
                 </ul>
                 <ul className="xb-item--social-link list-unstyled ul_li mt-45">

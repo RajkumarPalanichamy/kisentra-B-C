@@ -17,13 +17,13 @@ const About: React.FC = () => {
           <div className="sec-title--two text-center">
             <Fade direction="down" triggerOnce={false} duration={1000} delay={9}>
               <div className="sub-title wow fadeInDown" data-wow-duration="600ms">
-                <Image src={icon} alt="We are Innomax" />
-                {' '}We are innomax
+                <Image src={icon} alt="About Kisentra" />
+                {' '}About Kisentra
               </div>
             </Fade>
             <Fade direction="down" triggerOnce={false} duration={1500} delay={9}>
               <h2 className="title wow fadeInDown" data-wow-delay="150ms" data-wow-duration="600ms">
-                Committed to Your SEO Success
+                Quality Products for Your Daily Life
               </h2>
             </Fade>
           </div>
@@ -36,33 +36,33 @@ const About: React.FC = () => {
 
                 <div className="about-item_box ul_li">
                   <div className="xb-item--icon">
-                    <Image src={about1} alt="Innovation icon" />
+                    <Image src={about1} alt="Quality icon" />
                   </div>
                   <div className="xb-item--holder">
                     <p className="xb-item--content">
-                      <span>Innovation:</span> Continuously refining SEO to stay ahead of search engine updates.
+                      <span>Quality First:</span> We offer premium BPA-free water bottles and food-grade tiffin boxes that are safe for daily use.
                     </p>
                   </div>
                 </div>
 
                 <div className="about-item_box ul_li">
                   <div className="xb-item--icon">
-                    <Image src={about2} alt="Client Focus icon" />
+                    <Image src={about2} alt="Customer Focus icon" />
                   </div>
                   <div className="xb-item--holder">
                     <p className="xb-item--content">
-                      <span>Client Focus:</span> Your success drives us; we craft custom SEO solutions for impact.
+                      <span>Customer Satisfaction:</span> Your happiness is our priority. We ensure every product meets the highest standards.
                     </p>
                   </div>
                 </div>
 
                 <div className="about-item_box ul_li">
                   <div className="xb-item--icon">
-                    <Image src={about3} alt="Transparency icon" />
+                    <Image src={about3} alt="Eco-Friendly icon" />
                   </div>
                   <div className="xb-item--holder">
                     <p className="xb-item--content">
-                      <span>Transparency:</span> Clear communication and honest reporting at every step.
+                      <span>Sustainability:</span> We believe in eco-friendly products that help you lead a healthier, more sustainable lifestyle.
                     </p>
                   </div>
                 </div>
@@ -75,13 +75,13 @@ const About: React.FC = () => {
                 <div className="xb-item--holder">
                   <h3 className="xb-item--title">Our Mission</h3>
                   <p className="xb-item--content">
-                    Our mission is to boost online presence with cutting-edge SEO, driving organic traffic, increasing visibility, and delivering measurable results.
+                    Our mission is to provide high-quality, eco-friendly water bottles and tiffin boxes that help you stay hydrated and maintain a healthy lifestyle. We are committed to offering products that are safe, durable, and environmentally conscious.
                   </p>
                 </div>
                 <div className="xb-item--holder">
                   <h3 className="xb-item--title">Our Vision</h3>
                   <p className="xb-item--content">
-                    Our vision is to be a trusted leader in digital marketing, setting the standard for ethical SEO. We empower businesses to thrive with effective strategies.
+                    Our vision is to become India's most trusted brand for premium lifestyle products, making quality water bottles and tiffin boxes accessible to everyone while promoting sustainable living practices.
                   </p>
                 </div>
               </div>
