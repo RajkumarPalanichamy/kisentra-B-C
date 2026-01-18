@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [resendingEmail, setResendingEmail] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -121,265 +123,324 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
+            transition: 'all 0.3s ease'
         }} onClick={onClose}>
-            <Fade direction="up" triggerOnce duration={300} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <div
-                    onClick={(e) => e.stopPropagation()}
+            <style jsx>{`
+                @keyframes floatUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .modal-content {
+                    animation: floatUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .input-group:focus-within label {
+                    color: var(--color-primary-two);
+                }
+                .input-field {
+                    transition: all 0.2s ease;
+                }
+                .input-field:focus {
+                    background-color: #fff;
+                    box-shadow: 0 0 0 2px var(--color-primary-two);
+                    border-color: transparent;
+                }
+            `}</style>
+
+            <div
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    width: '100%',
+                    maxWidth: '440px',
+                    backgroundColor: '#fff',
+                    borderRadius: '24px',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    position: 'relative',
+                    padding: '40px',
+                    margin: '20px'
+                }}
+            >
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
                     style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: '#f3f4f6',
+                        border: 'none',
+                        color: '#666',
+                        cursor: 'pointer',
                         display: 'flex',
-                        width: '100%',
-                        maxWidth: '850px',
-                        height: '528px',
-                        backgroundColor: '#fff',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                        position: 'relative'
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        fontSize: '18px'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#e5e7eb';
+                        e.currentTarget.style.color = '#000';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f3f4f6';
+                        e.currentTarget.style.color = '#666';
                     }}
                 >
-                    {/* Close Button */}
-                    <button
-                        onClick={onClose}
-                        style={{
-                            position: 'absolute',
-                            top: '10px',
-                            right: '10px',
-                            background: 'transparent',
-                            border: 'none',
-                            fontSize: '28px',
-                            color: '#fff',
-                            cursor: 'pointer',
-                            zIndex: 30,
-                            padding: '0 10px',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-                        }}
-                    >
-                        &times;
-                    </button>
+                    &times;
+                </button>
 
-                    {/* Left Panel - Branding */}
-                    <div style={{
-                        width: '38%',
-                        backgroundColor: 'var(--color-primary-two)',
-                        padding: '40px 33px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        color: '#fff',
-                        position: 'relative',
-                        backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 100%)'
-                    }}>
-                        <div>
-                            <h2 style={{
-                                fontSize: '28px',
-                                fontWeight: '600',
-                                marginBottom: '15px',
-                                color: '#fff',
-                                lineHeight: '1.2'
-                            }}>
-                                {isLogin ? 'Login' : 'Looks like you\'re new here!'}
-                            </h2>
-                            <p style={{
-                                fontSize: '18px',
-                                color: '#dbdbdb',
-                                lineHeight: '1.5',
-                                marginTop: '15px',
-                                fontWeight: '500'
-                            }}>
-                                {isLogin
-                                    ? 'Get access to your Orders, Wishlist and Recommendations'
-                                    : 'Sign up with your email to get started'}
-                            </p>
-                        </div>
-
-                        <div style={{
-                            textAlign: 'center',
-                            marginTop: 'auto',
-                            marginBottom: '30px'
-                        }}>
-                            <i className={`fa-duotone ${isLogin ? 'fa-bag-shopping' : 'fa-rocket-launch'}`} style={{
-                                fontSize: '120px',
-                                color: 'rgba(255,255,255,0.95)',
-                                filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
-                            }}></i>
-                        </div>
+                {/* Header Section */}
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <div style={{ marginBottom: '24px', display: 'inline-block' }}>
+                        <Image src="/images/logo/logo-black.svg" alt="Logo" width={140} height={40} style={{ height: 'auto' }} />
                     </div>
-
-                    {/* Right Panel - Form */}
-                    <div style={{
-                        flex: 1,
-                        padding: '56px 35px 16px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        backgroundColor: '#fff',
-                        position: 'relative',
-                        overflowY: 'auto'
+                    <h2 style={{
+                        fontSize: '24px',
+                        fontWeight: '700',
+                        color: '#111827',
+                        marginBottom: '8px'
                     }}>
-                        {/* Mobile Close Button (visible if flex wraps on tiny screens, though fixed width prevents wrapping usually) */}
-                        <button
-                            onClick={onClose}
-                            style={{
+                        {isLogin ? 'Welcome Back' : 'Create Account'}
+                    </h2>
+                    <p style={{
+                        fontSize: '15px',
+                        color: '#6b7280',
+                        lineHeight: '1.5'
+                    }}>
+                        {isLogin
+                            ? 'Please enter your details to sign in'
+                            : 'Enter your details to get started'}
+                    </p>
+                </div>
+
+                {/* Form Section */}
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                    <div className="login-input-group" style={{ display: 'block' }}>
+                        <label style={{
+                            display: 'block',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#374151',
+                            marginBottom: '6px',
+                            marginLeft: '4px'
+                        }}>Email Address</label>
+                        <div style={{ position: 'relative' }}>
+                            <i className="far fa-envelope" style={{
                                 position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                background: 'transparent',
-                                border: 'none',
-                                fontSize: '24px',
-                                color: '#878787',
-                                cursor: 'pointer',
-                                zIndex: 20,
-                                padding: '5px'
-                            }}
-                            className="d-md-none" // Bootstrap class to hide on wider screens if needed, strictly redundant here due to layout
-                        >
-                            &times;
-                        </button>
-
-                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-
-                            <div style={{ marginBottom: '24px', position: 'relative' }}>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    placeholder="Enter Email"
-                                    style={{
-                                        width: '100%',
-                                        border: 'none',
-                                        borderBottom: '1px solid #e0e0e0',
-                                        padding: '10px 0',
-                                        fontSize: '16px',
-                                        outline: 'none',
-                                        transition: 'border-bottom-color 0.2s',
-                                        background: 'transparent'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderBottomColor = 'var(--color-primary-two)'}
-                                    onBlur={(e) => e.target.style.borderBottomColor = '#e0e0e0'}
-                                />
-                            </div>
-
-                            <div style={{ marginBottom: '35px', position: 'relative' }}>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    minLength={6}
-                                    placeholder="Enter Password"
-                                    style={{
-                                        width: '100%',
-                                        border: 'none',
-                                        borderBottom: '1px solid #e0e0e0',
-                                        padding: '10px 0',
-                                        fontSize: '16px',
-                                        outline: 'none',
-                                        transition: 'border-bottom-color 0.2s',
-                                        background: 'transparent'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderBottomColor = 'var(--color-primary-two)'}
-                                    onBlur={(e) => e.target.style.borderBottomColor = '#e0e0e0'}
-                                />
-                                {isLogin && (
-                                    <a href="#" style={{
-                                        position: 'absolute',
-                                        right: 0,
-                                        top: '10px',
-                                        fontSize: '14px',
-                                        color: 'var(--color-primary-two)',
-                                        textDecoration: 'none',
-                                        fontWeight: '600'
-                                    }}>
-                                        Forgot?
-                                    </a>
-                                )}
-                            </div>
-
-                            <p style={{ fontSize: '12px', color: '#878787', marginTop: '-10px', marginBottom: '20px' }}>
-                                By continuing, you agree to our <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none' }}>Terms of Use</a> and <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none' }}>Privacy Policy</a>.
-                            </p>
-
-                            {error && (
-                                <div style={{ marginBottom: '15px', fontSize: '12px', color: '#ff6161', fontWeight: '500' }}>
-                                    {error}
-                                    {(error.includes('Email not confirmed') || error.includes('email_not_confirmed')) && (
-                                        <button
-                                            type="button"
-                                            onClick={handleResendConfirmation}
-                                            disabled={resendingEmail || !email}
-                                            style={{
-                                                display: 'block',
-                                                marginTop: '5px',
-                                                color: 'var(--color-primary-two)',
-                                                background: 'none',
-                                                border: 'none',
-                                                padding: 0,
-                                                cursor: 'pointer',
-                                                textDecoration: 'underline'
-                                            }}
-                                        >
-                                            {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                            {message && (
-                                <div style={{ marginBottom: '15px', fontSize: '13px', color: '#26a541', fontWeight: '500' }}>
-                                    {message}
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={loading}
+                                left: '16px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: '#9ca3af',
+                                fontSize: '16px',
+                                pointerEvents: 'none'
+                            }}></i>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="name@company.com"
+                                className="input-field"
                                 style={{
                                     width: '100%',
-                                    backgroundColor: '#fb641b',
-                                    background: 'var(--color-primary-two)',
-                                    color: '#fff',
+                                    padding: '14px 16px 14px 44px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #e5e7eb',
+                                    background: '#f9fafb',
+                                    fontSize: '15px',
+                                    color: '#1f2937',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="login-input-group" style={{ display: 'block' }}>
+                        <label style={{
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#374151',
+                            marginBottom: '6px',
+                            marginLeft: '4px',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                        }}>
+                            Password
+                            {isLogin && <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontWeight: 500 }}>Forgot?</a>}
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                            <i className="far fa-lock" style={{
+                                position: 'absolute',
+                                left: '16px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: '#9ca3af',
+                                fontSize: '16px',
+                                pointerEvents: 'none'
+                            }}></i>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                placeholder="Enter your password"
+                                className="input-field"
+                                style={{
+                                    width: '100%',
+                                    padding: '14px 44px 14px 44px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #e5e7eb',
+                                    background: '#f9fafb',
+                                    fontSize: '15px',
+                                    color: '#1f2937',
+                                    outline: 'none'
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '16px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
                                     border: 'none',
-                                    borderRadius: '2px',
-                                    height: '48px',
-                                    fontSize: '16px',
-                                    fontWeight: '600',
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                                    marginBottom: '15px',
-                                    opacity: loading ? 0.7 : 1
+                                    cursor: 'pointer',
+                                    color: '#9ca3af',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 10
                                 }}
                             >
-                                {loading ? 'Processing...' : (isLogin ? 'Login' : 'Signup')}
+                                <i className={`far fa-eye${showPassword ? '-slash' : ''}`} style={{ fontSize: '16px' }}></i>
                             </button>
-
-                            <div style={{ marginTop: 'auto', textAlign: 'center', paddingBottom: '20px' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsLogin(!isLogin);
-                                        setError('');
-                                        setMessage('');
-                                    }}
-                                    style={{
-                                        color: 'var(--color-primary-two)',
-                                        background: 'none',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {isLogin ? "New to Kisentra? Create an account" : "Existing User? Log in"}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
-            </Fade>
+
+                    {/* Messages */}
+                    {(error || message) && (
+                        <div style={{
+                            padding: '12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            backgroundColor: error ? '#fef2f2' : '#f0fdf4',
+                            color: error ? '#991b1b' : '#166534',
+                            border: `1px solid ${error ? '#fecaca' : '#bbf7d0'}`,
+                            display: 'flex',
+                            gap: '8px',
+                            alignItems: 'start'
+                        }}>
+                            <i className={`fas fa-${error ? 'exclamation-circle' : 'check-circle'}`} style={{ marginTop: '2px' }}></i>
+                            <div>
+                                {error || message}
+                                {error && (error.includes('Email not confirmed') || error.includes('email_not_confirmed')) && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResendConfirmation}
+                                        disabled={resendingEmail || !email}
+                                        style={{
+                                            display: 'block',
+                                            marginTop: '4px',
+                                            fontWeight: '600',
+                                            textDecoration: 'underline',
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: 0,
+                                            cursor: 'pointer',
+                                            color: 'inherit'
+                                        }}
+                                    >
+                                        {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Terms */}
+                    <p style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', textAlign: 'center', marginTop: '-4px' }}>
+                        By continuing, you agree to our <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontWeight: 500 }}>Terms of Service</a> and <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontWeight: 500 }}>Privacy Policy</a>.
+                    </p>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            backgroundColor: 'var(--color-primary-two)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '12px',
+                            height: '50px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 4px 12px rgba(var(--color-primary-two-rgb, 54, 147, 217), 0.3)',
+                            transition: 'all 0.2s ease',
+                            opacity: loading ? 0.7 : 1,
+                            marginTop: '8px'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!loading) e.currentTarget.style.transform = 'translateY(-2px)';
+                            if (!loading) e.currentTarget.style.boxShadow = '0 6px 16px rgba(var(--color-primary-two-rgb, 54, 147, 217), 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(var(--color-primary-two-rgb, 54, 147, 217), 0.3)';
+                        }}
+                    >
+                        {loading ? (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                <i className="fas fa-circle-notch fa-spin"></i>
+                                <span>Processing...</span>
+                            </div>
+                        ) : (
+                            isLogin ? 'Sign In' : 'Create Account'
+                        )}
+                    </button>
+
+                    <div style={{ textAlign: 'center', paddingTop: '10px' }}>
+                        <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                            {isLogin ? "Don't have an account? " : "Already have an account? "}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsLogin(!isLogin);
+                                setError('');
+                                setMessage('');
+                            }}
+                            style={{
+                                color: 'var(--color-primary-two)',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                transition: 'color 0.2s'
+                            }}
+                        >
+                            {isLogin ? "Sign up" : "Log in"}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
