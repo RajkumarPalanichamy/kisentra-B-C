@@ -32,7 +32,9 @@ const MailFloatingButton: React.FC<MailFloatingButtonProps> = ({
   };
 
   const buttonSize = isMobile ? 30 : 40;
-  const bottomPosition = isMobile ? 65 : 75; // Adjusted for mobile (25px + 30px + 10px spacing)
+  // Mobile: 74px (scroll button bottom) + 30px (scroll button height) + 10px spacing = 114px
+  // Desktop: 25px (scroll button bottom) + 40px (scroll button height) + 10px spacing = 75px
+  const bottomPosition = isMobile ? 114 : 75;
 
   return (
     <div

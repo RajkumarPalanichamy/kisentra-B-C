@@ -29,8 +29,9 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
   };
 
   const buttonSize = isMobile ? 30 : 40;
-  // Position above mail button: mail bottom (75px/65px) + mail height (40px/30px) + spacing (10px)
-  const bottomPosition = isMobile ? 105 : 125;
+  // Mobile: 114px (mail button bottom) + 30px (mail button height) + 10px spacing = 154px
+  // Desktop: 75px (mail button bottom) + 40px (mail button height) + 10px spacing = 125px
+  const bottomPosition = isMobile ? 154 : 125;
 
   return (
     <div

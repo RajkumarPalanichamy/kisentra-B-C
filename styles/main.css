@@ -282,6 +282,9 @@ ul.smothscroll a:hover {
 }
 
 @media(max-width:767px) {
+  ul.smothscroll {
+    bottom: 74px; /* 64px (bottom nav height) + 10px spacing */
+  }
   ul.smothscroll a {
       width: 30px;
       height: 30px;
