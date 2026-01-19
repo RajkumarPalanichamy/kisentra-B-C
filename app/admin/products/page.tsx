@@ -401,6 +401,63 @@ const AdminProductsPage: React.FC = () => {
   );
 };
 
+// Reusable form components - defined outside to prevent re-creation on each render
+const InputLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--color-heading)', fontSize: '14px' }}>
+    {children}
+    {required && <span style={{ color: '#ff4d4f', marginLeft: '4px' }}>*</span>}
+  </label>
+);
+
+const StyledInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { error?: string }> = (props) => (
+  <div>
+    <input
+      {...props}
+      style={{
+        width: '100%',
+        padding: '12px 15px',
+        borderRadius: '8px',
+        border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
+        fontSize: '15px',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        backgroundColor: '#fff'
+      }}
+      onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
+      onBlur={(e) => e.target.style.borderColor = props.error ? '#ff4d4f' : '#e7e8ec'}
+    />
+    {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
+  </div>
+);
+
+const StyledSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
+  <div style={{ position: 'relative' }}>
+    <select
+      {...props}
+      style={{
+        width: '100%',
+        padding: '12px 15px',
+        borderRadius: '8px',
+        border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
+        fontSize: '15px',
+        outline: 'none',
+        backgroundColor: '#fff',
+        cursor: 'pointer',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        MozAppearance: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 15px center',
+        paddingRight: '40px'
+      }}
+    >
+      {props.children}
+    </select>
+    {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
+  </div>
+);
+
 // Product Form Component
 const ProductForm: React.FC<{
   product: Product | null;
@@ -433,6 +490,7 @@ const ProductForm: React.FC<{
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -555,55 +613,6 @@ const ProductForm: React.FC<{
     }
   };
 
-  const InputLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--color-heading)', fontSize: '14px' }}>
-      {children}
-      {required && <span style={{ color: '#ff4d4f', marginLeft: '4px' }}>*</span>}
-    </label>
-  );
-
-  const StyledInput = (props: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
-    <div>
-      <input
-        {...props}
-        style={{
-          width: '100%',
-          padding: '12px 15px',
-          borderRadius: '8px',
-          border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
-          fontSize: '15px',
-          outline: 'none',
-          transition: 'border-color 0.2s',
-          backgroundColor: '#fff'
-        }}
-        onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
-        onBlur={(e) => e.target.style.borderColor = props.error ? '#ff4d4f' : '#e7e8ec'}
-      />
-      {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
-    </div>
-  );
-
-  const StyledSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
-    <div>
-      <select
-        {...props}
-        style={{
-          width: '100%',
-          padding: '12px 15px',
-          borderRadius: '8px',
-          border: `1px solid ${props.error ? '#ff4d4f' : '#e7e8ec'}`,
-          fontSize: '15px',
-          outline: 'none',
-          backgroundColor: '#fff',
-          cursor: 'pointer'
-        }}
-      >
-        {props.children}
-      </select>
-      {props.error && <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>{props.error}</div>}
-    </div>
-  );
-
   return (
     <div
       style={{
@@ -636,7 +645,9 @@ const ProductForm: React.FC<{
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
-          animation: 'slideUp 0.3s ease-out'
+          animation: 'slideUp 0.3s ease-out',
+          position: 'relative',
+          overflow: 'visible'
         }}>
 
         {/* Header */}
@@ -723,12 +734,12 @@ const ProductForm: React.FC<{
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto' }}>
-          <div style={{ padding: '30px' }}>
+        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', overflowX: 'visible', position: 'relative', zIndex: 1 }}>
+          <div style={{ padding: '30px', position: 'relative', minHeight: 'fit-content', overflow: 'visible' }}>
 
             {/* General Tab */}
             {activeTab === 'general' && (
-              <div className="row">
+              <div className="row" style={{ position: 'relative', overflow: 'visible' }}>
                 <div className="col-12 mb-30">
                   <InputLabel required>Product Title</InputLabel>
                   <StyledInput
@@ -737,12 +748,14 @@ const ProductForm: React.FC<{
                     value={formData.title}
                     error={errors.title}
                     onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        title: e.target.value,
-                        slug: !product ? e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : formData.slug
-                      });
-                      if (errors.title) setErrors({ ...errors, title: '' });
+                      const newTitle = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        title: newTitle,
+                        // Only auto-generate slug if user hasn't manually edited it
+                        slug: (!product && !slugManuallyEdited) ? newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : prev.slug
+                      }));
+                      if (errors.title) setErrors(prev => ({ ...prev, title: '' }));
                     }}
                   />
                 </div>
@@ -754,12 +767,21 @@ const ProductForm: React.FC<{
                       type="text"
                       value={formData.slug}
                       placeholder="premium-business-consultation"
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      onChange={(e) => {
+                        setSlugManuallyEdited(true);
+                        setFormData(prev => ({ ...prev, slug: e.target.value }));
+                      }}
                     />
                     <button
                       type="button"
                       className="thm-btn thm-btn--border"
-                      onClick={() => setFormData({ ...formData, slug: formData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '' })}
+                      onClick={() => {
+                        setFormData(prev => {
+                          const generatedSlug = prev.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '';
+                          return { ...prev, slug: generatedSlug };
+                        });
+                        setSlugManuallyEdited(false);
+                      }}
                       title="Generate from Title"
                       style={{ padding: '0 20px', whiteSpace: 'nowrap' }}
                     >
@@ -780,7 +802,7 @@ const ProductForm: React.FC<{
                     step="0.01"
                     value={formData.price || ''}
                     error={errors.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
 
@@ -792,25 +814,27 @@ const ProductForm: React.FC<{
                     min="0"
                     step="0.01"
                     value={formData.originalPrice || ''}
-                    onChange={(e) => setFormData({ ...formData, originalPrice: parseFloat(e.target.value) || undefined })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || undefined }))}
                   />
                   <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
                     Set higher than price to show a discount.
                   </p>
                 </div>
 
-                <div className="col-md-12 mb-30">
+                <div className="col-md-12 mb-30" style={{ position: 'relative', zIndex: 1000 }}>
                   <InputLabel required>Category</InputLabel>
-                  <StyledSelect
-                    value={formData.category}
-                    error={errors.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="">Select a Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </StyledSelect>
+                  <div style={{ position: 'relative', zIndex: 1001 }}>
+                    <StyledSelect
+                      value={formData.category}
+                      error={errors.category}
+                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                    >
+                      <option value="">Select a Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </StyledSelect>
+                  </div>
                 </div>
               </div>
             )}
@@ -823,7 +847,7 @@ const ProductForm: React.FC<{
                   <textarea
                     rows={3}
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     style={{
                       width: '100%',
                       padding: '15px',
@@ -845,7 +869,7 @@ const ProductForm: React.FC<{
                   <textarea
                     rows={10}
                     value={formData.longDescription}
-                    onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, longDescription: e.target.value }))}
                     style={{
                       width: '100%',
                       padding: '15px',
