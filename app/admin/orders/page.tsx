@@ -365,6 +365,14 @@ const AdminOrdersPage: React.FC = () => {
     cancelled: { bg: '#f8d7da', color: '#721c24' }
   };
 
+  const statusIcons: Record<string, string> = {
+    pending: 'fa-clock',
+    processing: 'fa-spinner',
+    shipped: 'fa-shipping-fast',
+    delivered: 'fa-check-circle',
+    cancelled: 'fa-times-circle'
+  };
+
   if (isLoading || !isAuthenticated) {
     return null;
   }
@@ -377,22 +385,71 @@ const AdminOrdersPage: React.FC = () => {
             <div className="row">
               <div className="col-12">
                 <div style={{ marginBottom: '40px' }}>
-                  <h1 className="title mb-20">Order Management</h1>
-                  <p className="content">View and manage all customer orders</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      backgroundColor: '#2563eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '24px'
+                    }}>
+                      <i className="fas fa-shopping-cart"></i>
+                    </div>
+                    <div>
+                      <h1 style={{ fontSize: '32px', fontWeight: '800', margin: 0, color: '#1e293b' }}>
+                        Order Management
+                      </h1>
+                      <p style={{ margin: '5px 0 0 0', color: '#64748b', fontSize: '16px' }}>
+                        View and manage all customer orders
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Filter */}
-                <div style={{ marginBottom: '30px' }}>
-                  <label style={{ marginRight: '15px', fontWeight: '600' }}>Filter by Status:</label>
+                <div style={{ 
+                  marginBottom: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '15px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <i className="fas fa-filter" style={{ color: '#64748b', fontSize: '16px' }}></i>
+                    <label style={{ fontWeight: '600', color: '#475569', fontSize: '14px' }}>
+                      Filter by Status:
+                    </label>
+                  </div>
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
                     style={{
-                      padding: '10px 15px',
-                      borderRadius: '8px',
-                      border: '1px solid #e7e8ec',
+                      padding: '10px 40px 10px 15px',
+                      borderRadius: '10px',
+                      border: '2px solid #e2e8f0',
                       fontSize: '14px',
-                      cursor: 'pointer'
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: '#fff',
+                      color: '#1e293b',
+                      transition: 'all 0.2s',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      paddingRight: '40px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
                     <option value="all">All Orders</option>
@@ -402,117 +459,341 @@ const AdminOrdersPage: React.FC = () => {
                     <option value="delivered">Delivered</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+                  {orders.length > 0 && (
+                    <div style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#f1f5f9',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#475569'
+                    }}>
+                      {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+                    </div>
+                  )}
                 </div>
 
                 {loading ? (
-                  <div className="text-center" style={{ padding: '60px' }}>
-                    <p className="content">Loading orders...</p>
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    padding: '80px 40px',
+                    textAlign: 'center',
+                    border: '1px solid #e7e8ec'
+                  }}>
+                    <div style={{
+                      width: '50px',
+                      height: '50px',
+                      border: '4px solid #f1f5f9',
+                      borderTop: '4px solid #2563eb',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto 20px'
+                    }}></div>
+                    <p style={{ color: '#64748b', fontSize: '16px', fontWeight: '500', margin: 0 }}>
+                      Loading orders...
+                    </p>
+                    <style jsx>{`
+                      @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                      }
+                    `}</style>
                   </div>
                 ) : orders.length === 0 ? (
-                  <div className="text-center" style={{ padding: '60px' }}>
-                    <p className="content">No orders found.</p>
+                  <div style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    padding: '80px 40px',
+                    textAlign: 'center',
+                    border: '1px solid #e7e8ec'
+                  }}>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 20px',
+                      fontSize: '36px',
+                      color: '#94a3b8'
+                    }}>
+                      <i className="fas fa-inbox"></i>
+                    </div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>
+                      No orders found
+                    </h3>
+                    <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
+                      {selectedStatus === 'all' 
+                        ? 'There are no orders yet.' 
+                        : `No orders with status "${selectedStatus}" found.`}
+                    </p>
                   </div>
                 ) : (
                   <div className="orders-table" style={{
                     backgroundColor: '#fff',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     overflow: 'hidden',
-                    border: '1px solid #e7e8ec'
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
                   }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #e7e8ec' }}>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Order ID</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Date</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Customer</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Items</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Total</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Status</th>
-                          <th style={{ padding: '15px', textAlign: 'left', fontWeight: '700' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {orders.map((order) => {
-                          const statusColor = statusColors[order.status] || statusColors.pending;
-                          const orderDate = new Date(order.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          });
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ 
+                            backgroundColor: '#f8fafc', 
+                            borderBottom: '2px solid #e2e8f0'
+                          }}>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="fas fa-hashtag" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Order ID
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="far fa-calendar" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Date
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="far fa-user" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Customer
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="fas fa-box" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Items
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="fas fa-rupee-sign" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Total
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="fas fa-info-circle" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Status
+                            </th>
+                            <th style={{ 
+                              padding: '18px 20px', 
+                              textAlign: 'left', 
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              color: '#475569',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <i className="fas fa-cog" style={{ marginRight: '8px', opacity: 0.6 }}></i>
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orders.map((order, index) => {
+                            const statusColor = statusColors[order.status] || statusColors.pending;
+                            const orderDate = new Date(order.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            });
 
-                          return (
-                            <tr key={order.id} style={{ borderBottom: '1px solid #e7e8ec' }}>
-                              <td style={{ padding: '15px' }}>
-                                <code style={{ fontSize: '12px', color: '#666' }}>
-                                  {order.id.substring(0, 8)}...
-                                </code>
-                              </td>
-                              <td style={{ padding: '15px' }}>{orderDate}</td>
-                              <td style={{ padding: '15px' }}>
-                                {order.user?.email || 'N/A'}
-                              </td>
-                              <td style={{ padding: '15px' }}>
-                                {order.order_items?.length || 0} item(s)
-                              </td>
-                              <td style={{ padding: '15px', fontWeight: '600' }}>
-                                ₹{order.total_amount.toFixed(2)}
-                              </td>
-                              <td style={{ padding: '15px' }}>
-                                <span style={{
-                                  padding: '5px 12px',
-                                  borderRadius: '6px',
-                                  backgroundColor: statusColor.bg,
-                                  color: statusColor.color,
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  textTransform: 'uppercase'
-                                }}>
-                                  {order.status}
-                                </span>
-                              </td>
-                              <td style={{ padding: '15px' }}>
-                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                  <button
-                                    onClick={() => viewOrderDetails(order)}
-                                    style={{
-                                      padding: '6px 12px',
-                                      backgroundColor: '#2563eb',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      fontSize: '12px',
-                                      fontWeight: '600'
-                                    }}
-                                  >
-                                    View
-                                  </button>
-                                  <select
-                                    value={order.status}
-                                    onChange={(e) => handleStatusUpdate(order.id, e.target.value as Order['status'])}
-                                    disabled={updatingStatus === order.id}
-                                    style={{
-                                      padding: '6px 10px',
-                                      borderRadius: '6px',
-                                      border: '1px solid #e7e8ec',
-                                      fontSize: '12px',
-                                      cursor: updatingStatus === order.id ? 'not-allowed' : 'pointer',
-                                      opacity: updatingStatus === order.id ? 0.6 : 1
-                                    }}
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="shipped">Shipped</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="cancelled">Cancelled</option>
-                                  </select>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                            return (
+                              <tr 
+                                key={order.id} 
+                                style={{ 
+                                  borderBottom: '1px solid #f1f5f9',
+                                  backgroundColor: index % 2 === 0 ? '#fff' : '#fafbfc',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                                  e.currentTarget.style.transform = 'scale(1.001)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#fff' : '#fafbfc';
+                                  e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                              >
+                                <td style={{ padding: '18px 20px' }}>
+                                  <code style={{ 
+                                    fontSize: '12px', 
+                                    color: '#64748b',
+                                    fontFamily: 'monospace',
+                                    backgroundColor: '#f1f5f9',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    fontWeight: '600'
+                                  }}>
+                                    {order.id.substring(0, 8)}...
+                                  </code>
+                                </td>
+                                <td style={{ padding: '18px 20px', color: '#475569', fontSize: '14px' }}>
+                                  {orderDate}
+                                </td>
+                                <td style={{ padding: '18px 20px', color: '#475569', fontSize: '14px' }}>
+                                  {order.user?.email || (
+                                    <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>N/A</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '18px 20px', color: '#475569', fontSize: '14px' }}>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    backgroundColor: '#f1f5f9',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontWeight: '600'
+                                  }}>
+                                    <i className="fas fa-box" style={{ fontSize: '10px' }}></i>
+                                    {order.order_items?.length || 0}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '18px 20px', fontWeight: '700', fontSize: '15px', color: '#1e293b' }}>
+                                  ₹{order.total_amount.toFixed(2)}
+                                </td>
+                                <td style={{ padding: '18px 20px' }}>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '6px 14px',
+                                    borderRadius: '20px',
+                                    backgroundColor: statusColor.bg,
+                                    color: statusColor.color,
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                                  }}>
+                                    <i className={`fas ${statusIcons[order.status] || 'fa-circle'}`} style={{ fontSize: '10px' }}></i>
+                                    {order.status}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '18px 20px' }}>
+                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <button
+                                      onClick={() => viewOrderDetails(order)}
+                                      style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: '#2563eb',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#1d4ed8';
+                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.3)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#2563eb';
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(37, 99, 235, 0.2)';
+                                      }}
+                                    >
+                                      <i className="far fa-eye"></i>
+                                      View
+                                    </button>
+                                    <select
+                                      value={order.status}
+                                      onChange={(e) => handleStatusUpdate(order.id, e.target.value as Order['status'])}
+                                      disabled={updatingStatus === order.id}
+                                      style={{
+                                        padding: '8px 32px 8px 12px',
+                                        borderRadius: '8px',
+                                        border: '2px solid #e2e8f0',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: updatingStatus === order.id ? 'not-allowed' : 'pointer',
+                                        opacity: updatingStatus === order.id ? 0.6 : 1,
+                                        backgroundColor: '#fff',
+                                        color: '#1e293b',
+                                        transition: 'all 0.2s',
+                                        appearance: 'none',
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 10px center'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (!e.currentTarget.disabled) {
+                                          e.currentTarget.style.borderColor = '#2563eb';
+                                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor = '#e2e8f0';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                      }}
+                                    >
+                                      <option value="pending">Pending</option>
+                                      <option value="processing">Processing</option>
+                                      <option value="shipped">Shipped</option>
+                                      <option value="delivered">Delivered</option>
+                                      <option value="cancelled">Cancelled</option>
+                                    </select>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -530,184 +811,454 @@ const AdminOrdersPage: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
             zIndex: 10000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            animation: 'fadeIn 0.2s ease-out'
           }}
           onClick={() => setShowDetails(false)}
         >
           <div
             style={{
               backgroundColor: '#fff',
-              borderRadius: '16px',
-              padding: '40px',
+              borderRadius: '20px',
+              padding: '0',
               maxWidth: '900px',
               width: '100%',
               maxHeight: '90vh',
-              overflowY: 'auto',
-              position: 'relative'
+              overflow: 'hidden',
+              position: 'relative',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              animation: 'slideUp 0.3s ease-out'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setShowDetails(false)}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#666'
-              }}
-            >
-              ×
-            </button>
-
-            <h2 style={{ marginBottom: '30px', fontSize: '24px', fontWeight: '700' }}>
-              Order Details
-            </h2>
-
-            <div style={{ marginBottom: '30px' }}>
-              <div style={{ marginBottom: '15px' }}>
-                <strong>Order ID:</strong> {selectedOrder.id}
-              </div>
-              <div style={{ marginBottom: '15px' }}>
-                <strong>Date:</strong>{' '}
-                {new Date(selectedOrder.created_at).toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
-              <div style={{ marginBottom: '15px' }}>
-                <strong>Status:</strong>{' '}
-                <span style={{
-                  padding: '5px 15px',
-                  borderRadius: '5px',
-                  backgroundColor: statusColors[selectedOrder.status].bg,
-                  color: statusColors[selectedOrder.status].color,
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase'
-                }}>
-                  {selectedOrder.status}
-                </span>
-              </div>
-              <div style={{ marginBottom: '15px' }}>
-                <strong>Payment Method:</strong> {selectedOrder.payment_method.toUpperCase()}
-              </div>
-              {selectedOrder.user && (
-                <div style={{ marginBottom: '15px' }}>
-                  <strong>Customer Email:</strong> {selectedOrder.user.email}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '700' }}>
-                Order Items
-              </h3>
-              {selectedOrder.order_items?.map((item) => {
-                const imageUrl = item.image_url || '/placeholder-product.png';
-                return (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      gap: '20px',
-                      marginBottom: '20px',
-                      paddingBottom: '20px',
-                      borderBottom: '1px solid #e7e8ec'
-                    }}
-                  >
-                    <div style={{
-                      position: 'relative',
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      backgroundColor: '#f6f6f8'
-                    }}>
-                      <Image
-                        src={imageUrl}
-                        alt={item.product_title}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder-product.png';
-                        }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ fontSize: '16px', marginBottom: '5px', fontWeight: '600' }}>
-                        {item.product_title}
-                      </h4>
-                      <p style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
-                        Quantity: {item.quantity}
-                      </p>
-                      <p style={{ fontSize: '16px', fontWeight: '700', color: '#2563eb' }}>
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {selectedOrder.address && (
-              <div style={{ marginBottom: '30px' }}>
-                <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '700' }}>
-                  Shipping Address
-                </h3>
-                <p style={{ lineHeight: '1.8' }}>
-                  {selectedOrder.address.full_name}<br />
-                  {selectedOrder.address.address_line1}, {selectedOrder.address.address_line2}<br />
-                  {selectedOrder.address.city}, {selectedOrder.address.state} - {selectedOrder.address.pincode}<br />
-                  Phone: {selectedOrder.address.phone}
-                </p>
-              </div>
-            )}
-
+            {/* Modal Header */}
             <div style={{
-              paddingTop: '20px',
-              borderTop: '2px solid #e7e8ec',
+              padding: '30px 40px',
+              borderBottom: '1px solid #e2e8f0',
+              backgroundColor: '#f8fafc',
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'space-between'
             }}>
-              <div>
-                <strong style={{ fontSize: '20px' }}>Total Amount:</strong>
-                <span style={{ fontSize: '24px', fontWeight: '700', color: '#2563eb', marginLeft: '10px' }}>
-                  ₹{selectedOrder.total_amount.toFixed(2)}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  backgroundColor: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '20px'
+                }}>
+                  <i className="fas fa-receipt"></i>
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#1e293b' }}>
+                    Order Details
+                  </h2>
+                  <p style={{ margin: '5px 0 0 0', color: '#64748b', fontSize: '14px' }}>
+                    Order #{selectedOrder.id.substring(0, 8)}
+                  </p>
+                </div>
               </div>
-              <select
-                value={selectedOrder.status}
-                onChange={(e) => handleStatusUpdate(selectedOrder.id, e.target.value as Order['status'])}
-                disabled={updatingStatus === selectedOrder.id}
+              <button
+                onClick={() => setShowDetails(false)}
                 style={{
-                  padding: '10px 15px',
-                  borderRadius: '8px',
-                  border: '1px solid #e7e8ec',
-                  fontSize: '14px',
-                  cursor: updatingStatus === selectedOrder.id ? 'not-allowed' : 'pointer'
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'none',
+                  border: '2px solid #e2e8f0',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#ef4444';
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.color = '#64748b';
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
+
+            {/* Modal Content */}
+            <div style={{
+              padding: '40px',
+              maxHeight: 'calc(90vh - 120px)',
+              overflowY: 'auto'
+            }}>
+
+              {/* Order Info Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '30px'
+              }}>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Order ID
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '700', fontFamily: 'monospace' }}>
+                    {selectedOrder.id.substring(0, 8)}...
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Date
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>
+                    {new Date(selectedOrder.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    {new Date(selectedOrder.created_at).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Status
+                  </div>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    backgroundColor: statusColors[selectedOrder.status].bg,
+                    color: statusColors[selectedOrder.status].color,
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    <i className={`fas ${statusIcons[selectedOrder.status] || 'fa-circle'}`} style={{ fontSize: '10px' }}></i>
+                    {selectedOrder.status}
+                  </span>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Payment
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', textTransform: 'uppercase' }}>
+                    {selectedOrder.payment_method}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#2563eb',
+                    fontSize: '18px'
+                  }}>
+                    <i className="fas fa-box"></i>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#1e293b' }}>
+                    Order Items
+                  </h3>
+                  <span style={{
+                    padding: '4px 12px',
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#475569'
+                  }}>
+                    {selectedOrder.order_items?.length || 0} items
+                  </span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px'
+                }}>
+                  {selectedOrder.order_items?.map((item) => {
+                    const imageUrl = item.image_url || '/placeholder-product.png';
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          gap: '20px',
+                          padding: '20px',
+                          backgroundColor: '#fafbfc',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.borderColor = '#cbd5e1';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fafbfc';
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div style={{
+                          position: 'relative',
+                          width: '100px',
+                          height: '100px',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          backgroundColor: '#f1f5f9',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <Image
+                            src={imageUrl}
+                            alt={item.product_title}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder-product.png';
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <h4 style={{ 
+                              fontSize: '16px', 
+                              marginBottom: '8px', 
+                              fontWeight: '700',
+                              color: '#1e293b'
+                            }}>
+                              {item.product_title}
+                            </h4>
+                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '14px',
+                                color: '#64748b',
+                                backgroundColor: '#f1f5f9',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontWeight: '600'
+                              }}>
+                                <i className="fas fa-layer-group" style={{ fontSize: '10px' }}></i>
+                                Qty: {item.quantity}
+                              </span>
+                              <span style={{
+                                fontSize: '14px',
+                                color: '#64748b'
+                              }}>
+                                ₹{item.price.toFixed(2)} each
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{
+                            marginTop: '12px',
+                            paddingTop: '12px',
+                            borderTop: '1px solid #e2e8f0'
+                          }}>
+                            <span style={{ 
+                              fontSize: '18px', 
+                              fontWeight: '800', 
+                              color: '#2563eb'
+                            }}>
+                              ₹{(item.price * item.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              {selectedOrder.address && (
+                <div style={{ marginBottom: '30px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#2563eb',
+                      fontSize: '18px'
+                    }}>
+                      <i className="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#1e293b' }}>
+                      Shipping Address
+                    </h3>
+                  </div>
+                  <div style={{
+                    padding: '24px',
+                    backgroundColor: '#fafbfc',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b', marginBottom: '12px' }}>
+                      {selectedOrder.address.full_name}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.8', marginBottom: '8px' }}>
+                      {selectedOrder.address.address_line1}
+                      {selectedOrder.address.address_line2 && `, ${selectedOrder.address.address_line2}`}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.8', marginBottom: '8px' }}>
+                      {selectedOrder.address.city}, {selectedOrder.address.state} - {selectedOrder.address.pincode}
+                    </div>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '14px',
+                      color: '#475569',
+                      marginTop: '12px',
+                      padding: '8px 12px',
+                      backgroundColor: '#f1f5f9',
+                      borderRadius: '8px'
+                    }}>
+                      <i className="fas fa-phone" style={{ fontSize: '12px' }}></i>
+                      {selectedOrder.address.phone}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer with Total and Status Update */}
+              <div style={{
+                padding: '24px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                border: '2px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '20px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Total Amount
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: '#2563eb' }}>
+                    ₹{selectedOrder.total_amount.toFixed(2)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>
+                    Update Status:
+                  </label>
+                  <select
+                    value={selectedOrder.status}
+                    onChange={(e) => handleStatusUpdate(selectedOrder.id, e.target.value as Order['status'])}
+                    disabled={updatingStatus === selectedOrder.id}
+                    style={{
+                      padding: '10px 40px 10px 15px',
+                      borderRadius: '10px',
+                      border: '2px solid #e2e8f0',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: updatingStatus === selectedOrder.id ? 'not-allowed' : 'pointer',
+                      backgroundColor: '#fff',
+                      color: '#1e293b',
+                      transition: 'all 0.2s',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      opacity: updatingStatus === selectedOrder.id ? 0.6 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!e.currentTarget.disabled) {
+                        e.currentTarget.style.borderColor = '#2563eb';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <style jsx>{`
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes slideUp {
+                from {
+                  transform: translateY(20px);
+                  opacity: 0;
+                }
+                to {
+                  transform: translateY(0);
+                  opacity: 1;
+                }
+              }
+            `}</style>
           </div>
         </div>
       )}
