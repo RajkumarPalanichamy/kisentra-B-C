@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard/ProductCard';
+import Reviews from '@/components/Reviews/Reviews';
 import Image from 'next/image';
 import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
@@ -41,6 +42,7 @@ const ProductDetailPage: React.FC = () => {
     };
     return deliveryDate.toLocaleDateString('en-US', options);
   };
+
 
   // Fetch user's default address pincode
   useEffect(() => {
@@ -119,6 +121,39 @@ const ProductDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showLightbox, setShowLightbox] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [productUUID, setProductUUID] = useState<string | null>(null);
+
+  // Fetch product UUID from Supabase
+  useEffect(() => {
+    const fetchProductUUID = async () => {
+      if (!product?.slug) return;
+
+      try {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.Id);
+        
+        if (isUUID) {
+          setProductUUID(product.Id);
+        } else {
+          // Lookup by slug
+          const { data, error } = await supabase
+            .from('products')
+            .select('id')
+            .eq('slug', product.slug)
+            .single();
+
+          if (!error && data?.id) {
+            setProductUUID(data.id);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching product UUID:', err);
+      }
+    };
+
+    if (product) {
+      fetchProductUUID();
+    }
+  }, [product]);
 
   if (!isMounted) {
     return (
@@ -398,7 +433,7 @@ const ProductDetailPage: React.FC = () => {
                     flexWrap: 'wrap',
                     paddingBottom: '4px'
                   }}>
-                    {['Overview', 'Specifications', 'Reviews', 'Q&A'].map((tab) => (
+                    {['Overview', 'Reviews'].map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -664,160 +699,28 @@ const ProductDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  {activeTab === 'Specifications' && (
-                    <div className="row">
-                      <div className="col-lg-12">
-                        <div style={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e6ef',
-                          borderRadius: '16px',
-                          padding: '35px',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                        }}>
-                          <h4 style={{
-                            fontSize: '26px',
-                            fontWeight: '700',
-                            marginBottom: '30px',
-                            color: '#040c13',
-                            paddingBottom: '20px',
-                            borderBottom: '2px solid #f0f2f4',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px'
-                          }}>
-                            <i className="fas fa-list-alt" style={{ color: '#0046be', fontSize: '24px' }}></i>
-                            Technical Specifications
-                          </h4>
-                          
-                          {product.highlights && Object.keys(product.highlights).length > 0 ? (
-                            <div style={{
-                              border: '1px solid #e0e6ef',
-                              borderRadius: '12px',
-                              overflow: 'hidden'
-                            }}>
-                              <table style={{
-                                width: '100%',
-                                borderCollapse: 'collapse'
-                              }}>
-                                <tbody>
-                                  {Object.entries(product.highlights || {}).map(([key, value], index, array) => (
-                                    <tr key={key} style={{
-                                      borderBottom: index < array.length - 1 ? '1px solid #e0e6ef' : 'none',
-                                      backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa',
-                                      transition: 'background-color 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#e9ecef';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#fff' : '#f8f9fa';
-                                    }}
-                                    >
-                                      <td style={{
-                                        padding: '20px 24px',
-                                        fontSize: '15px',
-                                        fontWeight: '700',
-                                        color: '#040c13',
-                                        width: '35%',
-                                        borderRight: '1px solid #e0e6ef',
-                                        background: index % 2 === 0 ? '#f8f9fa' : '#fff'
-                                      }}>{key}</td>
-                                      <td style={{
-                                        padding: '20px 24px',
-                                        fontSize: '15px',
-                                        color: '#1d252c',
-                                        fontWeight: '500'
-                                      }}>{value}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <p style={{ color: '#6c757d', fontSize: '16px', textAlign: 'center', padding: '40px' }}>
-                              No specifications available.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {activeTab === 'Reviews' && (
                     <div className="row">
                       <div className="col-lg-12">
-                        <div style={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e6ef',
-                          borderRadius: '16px',
-                          padding: '60px',
-                          textAlign: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                        }}>
+                        {productUUID ? (
+                          <Reviews productId={productUUID} productSlug={product.slug} />
+                        ) : (
                           <div style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #0046be 0%, #0066ff 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 25px',
-                            boxShadow: '0 4px 16px rgba(0,70,190,0.2)'
+                            backgroundColor: '#fff',
+                            border: '1px solid rgba(15, 85, 220, 0.1)',
+                            borderRadius: '0',
+                            padding: '60px',
+                            textAlign: 'center'
                           }}>
-                            <i className="fas fa-comments" style={{ fontSize: '36px', color: '#fff' }}></i>
+                            <p style={{ color: '#4a5568', fontSize: '14px', margin: 0 }}>
+                              Loading reviews...
+                            </p>
                           </div>
-                          <h4 style={{
-                            fontSize: '24px',
-                            fontWeight: '700',
-                            marginBottom: '15px',
-                            color: '#040c13'
-                          }}>Customer Reviews</h4>
-                          <p style={{ color: '#6c757d', fontSize: '16px', margin: 0 }}>
-                            Reviews coming soon. Be the first to review this product!
-                          </p>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {activeTab === 'Q&A' && (
-                    <div className="row">
-                      <div className="col-lg-12">
-                        <div style={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e6ef',
-                          borderRadius: '16px',
-                          padding: '60px',
-                          textAlign: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                        }}>
-                          <div style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 25px',
-                            boxShadow: '0 4px 16px rgba(255,193,7,0.2)'
-                          }}>
-                            <i className="fas fa-question-circle" style={{ fontSize: '36px', color: '#fff' }}></i>
-                          </div>
-                          <h4 style={{
-                            fontSize: '24px',
-                            fontWeight: '700',
-                            marginBottom: '15px',
-                            color: '#040c13'
-                          }}>Questions & Answers</h4>
-                          <p style={{ color: '#6c757d', fontSize: '16px', margin: 0 }}>
-                            No questions yet. Ask a question about this product!
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
               </div>
