@@ -7,6 +7,8 @@ import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
 import { getProducts, getProductsFromSupabaseAsync, Product } from '@/api/products';
 import { useCart } from '@/contexts/CartContext';
+import { useUser } from '@/contexts/UserContext';
+import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard/ProductCard';
 import Image from 'next/image';
 import { Fade } from 'react-awesome-reveal';
@@ -18,6 +20,69 @@ const ProductDetailPage: React.FC = () => {
   const slug = params?.slug as string;
   const [products, setProducts] = useState<Product[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const { user } = useUser();
+  const [userPincode, setUserPincode] = useState<string | null>(null);
+  const [deliveryDate, setDeliveryDate] = useState<string | null>(null);
+
+  // Calculate delivery date based on pincode
+  const calculateDeliveryDate = (pincode: string): string => {
+    // Simple delivery estimation: 3-5 business days
+    // You can make this more sophisticated based on pincode zones
+    const today = new Date();
+    const deliveryDays = 4; // Average 4 days
+    const deliveryDate = new Date(today);
+    deliveryDate.setDate(today.getDate() + deliveryDays);
+    
+    // Format: "Thu, Jan 16"
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    return deliveryDate.toLocaleDateString('en-US', options);
+  };
+
+  // Fetch user's default address pincode
+  useEffect(() => {
+    const fetchUserAddress = async () => {
+      if (!user?.id) {
+        setUserPincode(null);
+        setDeliveryDate(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('addresses')
+          .select('pincode')
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .single();
+
+        if (!error && data?.pincode) {
+          setUserPincode(data.pincode);
+          setDeliveryDate(calculateDeliveryDate(data.pincode));
+        } else {
+          // If no default address, try to get any address
+          const { data: anyAddress, error: anyError } = await supabase
+            .from('addresses')
+            .select('pincode')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single();
+
+          if (!anyError && anyAddress?.pincode) {
+            setUserPincode(anyAddress.pincode);
+            setDeliveryDate(calculateDeliveryDate(anyAddress.pincode));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user address:', err);
+      }
+    };
+
+    fetchUserAddress();
+  }, [user]);
 
   // Load products only on client side to avoid hydration mismatch
   useEffect(() => {
@@ -825,8 +890,32 @@ const ProductDetailPage: React.FC = () => {
                       </div>
                       <div>
                         <strong style={{ display: 'block', fontSize: '15px', marginBottom: '2px' }}>Shipping</strong>
-                        <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping to <span style={{ color: '#0046be', fontWeight: '600' }}>Zip 96701</span></span>
-                        <div style={{ fontSize: '12px', color: '#555' }}>Get it by <strong>Thu, Jan 16</strong></div>
+                        {userPincode ? (
+                          <>
+                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping to <span style={{ color: '#0046be', fontWeight: '600' }}>Pincode {userPincode}</span></span>
+                            {deliveryDate && (
+                              <div style={{ fontSize: '12px', color: '#555' }}>Get it by <strong>{deliveryDate}</strong></div>
+                            )}
+                          </>
+                        ) : user ? (
+                          <>
+                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping</span>
+                            <div style={{ fontSize: '12px', color: '#555' }}>
+                              <Link href="/account/addresses/add" style={{ color: '#0046be', textDecoration: 'underline' }}>
+                                Add address to see delivery date
+                              </Link>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping</span>
+                            <div style={{ fontSize: '12px', color: '#555' }}>
+                              <Link href="/auth" style={{ color: '#0046be', textDecoration: 'underline' }}>
+                                Login to see delivery date
+                              </Link>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
