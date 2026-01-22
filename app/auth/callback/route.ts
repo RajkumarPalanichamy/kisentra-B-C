@@ -30,6 +30,18 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
             const next = searchParams.get('next') ?? '/'
+            // If redirecting to reset-password, add recovery flag
+            if (next === '/reset-password') {
+                // Set a cookie to indicate recovery flow (expires in 10 minutes)
+                const response = NextResponse.redirect(`${origin}${next}?recovery=true`)
+                response.cookies.set('password_recovery_flow', 'true', {
+                    maxAge: 600, // 10 minutes
+                    httpOnly: false, // Allow client-side access
+                    sameSite: 'lax',
+                    path: '/'
+                })
+                return response
+            }
             return NextResponse.redirect(`${origin}${next}`)
         } else {
             return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`)

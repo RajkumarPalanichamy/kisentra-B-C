@@ -22,17 +22,25 @@ const ForgotPasswordPage: React.FC = () => {
         setError('');
 
         try {
+            if (!email || !email.includes('@')) {
+                setError('Please enter a valid email address');
+                setLoading(false);
+                return;
+            }
+
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/auth/verify?next=/reset-password`,
+                redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
             });
 
             if (error) {
-                setError(error.message);
+                console.error('Password reset error:', error);
+                setError(error.message || 'Failed to send password reset email. Please try again.');
             } else {
-                setMessage('Password reset link sent to your email. Please check your inbox.');
+                setMessage('Password reset link sent to your email. Please check your inbox and spam folder.');
             }
         } catch (err: any) {
-            setError(err.message || 'An error occurred');
+            console.error('Password reset exception:', err);
+            setError(err.message || 'An error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

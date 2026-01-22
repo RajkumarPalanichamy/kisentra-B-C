@@ -36,6 +36,45 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap"
           rel="stylesheet"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Early error handler to catch AbortErrors before React loads
+              (function() {
+                const isAbortError = (error) => {
+                  return error?.name === 'AbortError' ||
+                         (error?.name === 'DOMException' && error?.code === 20) ||
+                         error?.message?.includes('aborted') ||
+                         error?.message?.includes('signal is aborted') ||
+                         error?.message?.includes('abort') ||
+                         error?.code === '20' ||
+                         error?.code === 20 ||
+                         (typeof error === 'string' && error.includes('aborted'));
+                };
+                
+                // Handle unhandled promise rejections
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (isAbortError(event.reason)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    return false;
+                  }
+                }, true);
+                
+                // Handle runtime errors
+                window.addEventListener('error', function(event) {
+                  if (isAbortError(event.error)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    return false;
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
       </head>
       <body id='scrool'>
         <GlobalErrorHandler />

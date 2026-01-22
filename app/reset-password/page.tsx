@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
@@ -12,54 +12,425 @@ import Image from 'next/image';
 
 const ResetPasswordPage: React.FC = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isRecoveryFlow, setIsRecoveryFlow] = useState(false);
+    const [passwordChanged, setPasswordChanged] = useState(false);
+    const isSubmittingRef = useRef(false);
 
     useEffect(() => {
-        // Check if we have a session. If not, the link might be invalid or expired.
-        // However, with PKCE flow, the code exchange might happen just before this page renders.
-        // We'll give it a moment or check session.
+        let mounted = true;
+        const timeoutIds: NodeJS.Timeout[] = [];
+
+        // Handle AbortErrors locally to prevent runtime errors - use capture phase
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const error = event.reason;
+            const isAbortError = 
+                error?.name === 'AbortError' ||
+                error?.name === 'DOMException' && error?.code === 20 ||
+                error?.message?.includes('aborted') ||
+                error?.message?.includes('signal is aborted') ||
+                error?.message?.includes('abort') ||
+                error?.code === '20' ||
+                error?.code === 20 ||
+                (typeof error === 'string' && error.includes('aborted'));
+            
+            if (isAbortError) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                return;
+            }
+        };
+        // Use capture phase to catch errors before they bubble
+        window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
+
+        // Check if this is a password recovery flow
+        const checkRecoveryFlow = () => {
+            // Check URL params for recovery flag
+            const recoveryParam = searchParams.get('recovery');
+            if (recoveryParam === 'true') {
+                if (mounted) setIsRecoveryFlow(true);
+                // Set sessionStorage flag to persist across navigation
+                sessionStorage.setItem('password_recovery_flow', 'true');
+                // Clean up URL param
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+
+            // Check sessionStorage for recovery flag
+            const fromStorage = sessionStorage.getItem('password_recovery_flow');
+            if (fromStorage === 'true' && mounted) {
+                setIsRecoveryFlow(true);
+            }
+
+            // Check cookie (fallback)
+            const cookies = document.cookie.split(';');
+            const recoveryCookie = cookies.find(c => c.trim().startsWith('password_recovery_flow='));
+            if (recoveryCookie && recoveryCookie.split('=')[1] === 'true' && mounted) {
+                setIsRecoveryFlow(true);
+                sessionStorage.setItem('password_recovery_flow', 'true');
+            }
+        };
+
+        checkRecoveryFlow();
+
+        // Use auth state change listener for better session detection
+        let authSubscription: { unsubscribe: () => void } | null = null;
+        try {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (!mounted) return;
+                
+                if (session) {
+                    // Session found! Check if it's recovery flow
+                    const recoveryFlag = sessionStorage.getItem('password_recovery_flow');
+                    const recoveryCookie = document.cookie.split(';').find(c => c.trim().startsWith('password_recovery_flow='));
+                    
+                    if ((recoveryFlag === 'true' || (recoveryCookie && recoveryCookie.split('=')[1] === 'true')) && mounted) {
+                        setIsRecoveryFlow(true);
+                    }
+                }
+            });
+            authSubscription = subscription;
+        } catch (err: any) {
+            // Ignore errors setting up auth listener
+            if (err?.name !== 'AbortError' && !err?.message?.includes('aborted')) {
+                console.error('Error setting up auth state listener:', err);
+            }
+        }
+
+        // Check if we have a valid session for password reset
         const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                // We might be here but lost session, or arrived without code exchange?
-                // Let's assume valid flow for now, but warn if no user found on submit.
+            try {
+                // Wait longer for callback to complete (especially important for email links)
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (!mounted) return;
+                
+                const getSessionSafely = async () => {
+                    try {
+                        const result = await supabase.auth.getSession();
+                        return result;
+                    } catch (err: any) {
+                        // Silently ignore AbortErrors
+                        if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+                            return { data: { session: null }, error: null };
+                        }
+                        throw err;
+                    }
+                };
+
+                let sessionResult = await getSessionSafely();
+                let session = sessionResult.data?.session;
+                let error = sessionResult.error;
+                
+                if (!mounted) return;
+
+                // If no session, retry with increasing delays
+                if (!session) {
+                    const checkSessionWithRetries = async (attempt = 1, maxAttempts = 6) => {
+                        if (!mounted) return;
+                        
+                        const delay = attempt * 800; // 800ms, 1600ms, 2400ms, 3200ms, 4000ms, 4800ms
+                        const timeoutId = setTimeout(async () => {
+                            if (!mounted) return;
+                            
+                            try {
+                                const retryResult = await getSessionSafely();
+                                const retrySession = retryResult.data?.session;
+                                
+                                if (!mounted) return;
+                                
+                                if (!retrySession) {
+                                    // If no session and we haven't exhausted retries, try again
+                                    if (attempt < maxAttempts) {
+                                        checkSessionWithRetries(attempt + 1, maxAttempts);
+                                    } else {
+                                        // All retries exhausted
+                                        if (mounted) {
+                                            setError('No active session found. Please click the link from your email again or request a new password reset link.');
+                                        }
+                                    }
+                                } else {
+                                    // Session found! Check if it's recovery flow
+                                    if (mounted) {
+                                        const recoveryFlag = sessionStorage.getItem('password_recovery_flow');
+                                        const recoveryCookie = document.cookie.split(';').find(c => c.trim().startsWith('password_recovery_flow='));
+                                        
+                                        if (recoveryFlag === 'true' || (recoveryCookie && recoveryCookie.split('=')[1] === 'true')) {
+                                            setIsRecoveryFlow(true);
+                                        }
+                                    }
+                                }
+                            } catch (err: any) {
+                                if (!mounted) return;
+                                // Only log non-abort errors
+                                if (err?.name !== 'AbortError' && !err?.message?.includes('aborted')) {
+                                    console.error('Retry session check error:', err);
+                                    // If error and we haven't exhausted retries, try again
+                                    if (attempt < maxAttempts) {
+                                        checkSessionWithRetries(attempt + 1, maxAttempts);
+                                    } else if (mounted) {
+                                        setError('Session error. Please click the link from your email again.');
+                                    }
+                                } else if (attempt < maxAttempts) {
+                                    // Abort error, retry
+                                    checkSessionWithRetries(attempt + 1, maxAttempts);
+                                }
+                            }
+                        }, delay);
+                        
+                        timeoutIds.push(timeoutId);
+                    };
+                    
+                    // Start retry sequence
+                    checkSessionWithRetries();
+                } else {
+                    // Session exists - check if this is a recovery flow
+                    const recoveryFlag = sessionStorage.getItem('password_recovery_flow');
+                    const recoveryCookie = document.cookie.split(';').find(c => c.trim().startsWith('password_recovery_flow='));
+                    
+                    // If we have a recovery flag or cookie, this is a recovery flow
+                    if ((recoveryFlag === 'true' || (recoveryCookie && recoveryCookie.split('=')[1] === 'true')) && mounted) {
+                        setIsRecoveryFlow(true);
+                    } else {
+                        // User has session but no recovery flag - they might have navigated here directly
+                        // Check if they came from a password reset email by checking URL or redirect them
+                        const recoveryParam = searchParams.get('recovery');
+                        if (recoveryParam !== 'true' && mounted) {
+                            // No recovery indicators - this might be a direct navigation
+                            // Still allow them to change password if they want, but don't force it
+                            console.log('User arrived at reset password page without recovery flow indicators');
+                        }
+                    }
+                }
+            } catch (err: any) {
+                if (!mounted) return;
+                // Only log non-abort errors
+                if (err?.name !== 'AbortError' && !err?.message?.includes('aborted') && !err?.message?.includes('signal is aborted')) {
+                    console.error('Error checking session:', err);
+                }
             }
         };
         checkSession();
-    }, []);
+
+        // Prevent navigation away if in recovery flow and password not changed
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isRecoveryFlow && !passwordChanged) {
+                e.preventDefault();
+                e.returnValue = 'You must change your password before leaving this page.';
+                return e.returnValue;
+            }
+        };
+
+        // Intercept all link clicks to prevent navigation
+        const handleLinkClick = (e: MouseEvent) => {
+            if (isRecoveryFlow && !passwordChanged) {
+                const target = e.target as HTMLElement;
+                const link = target.closest('a');
+                if (link && link.href && !link.href.includes('#') && link.href !== window.location.href) {
+                    e.preventDefault();
+                    setError('Please change your password before navigating away from this page.');
+                    return false;
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        document.addEventListener('click', handleLinkClick);
+
+        return () => {
+            mounted = false;
+            // Clear all timeouts
+            timeoutIds.forEach(id => clearTimeout(id));
+            // Unsubscribe from auth state changes
+            if (authSubscription) {
+                try {
+                    authSubscription.unsubscribe();
+                } catch (err) {
+                    // Ignore unsubscribe errors
+                }
+            }
+            // Remove event listeners
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);
+            document.removeEventListener('click', handleLinkClick);
+        };
+    }, [searchParams, isRecoveryFlow, passwordChanged]);
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation();
+        
+        // Prevent multiple submissions
+        if (isSubmittingRef.current || loading) {
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
         if (password !== confirmPassword) {
             setError("Passwords don't match");
             return;
         }
 
+        isSubmittingRef.current = true;
         setLoading(true);
         setMessage('');
         setError('');
 
         try {
-            const { error } = await supabase.auth.updateUser({
-                password: password,
-            });
+            // Verify we have a session before updating password
+            let currentSession = null;
+            let sessionError = null;
 
-            if (error) {
-                setError(error.message);
+            // Try to get session with retry logic for abort errors
+            const getSessionWithRetry = async (retryCount = 0): Promise<{ session: any; error: any }> => {
+                try {
+                    const result = await supabase.auth.getSession();
+                    return { session: result.data.session, error: result.error };
+                } catch (err: any) {
+                    // Handle abort errors
+                    if ((err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) && retryCount < 2) {
+                        // Wait a bit and retry
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        return getSessionWithRetry(retryCount + 1);
+                    }
+                    // For other errors or max retries, return error
+                    return { session: null, error: err };
+                }
+            };
+
+            const sessionResult = await getSessionWithRetry();
+            currentSession = sessionResult.session;
+            sessionError = sessionResult.error;
+
+            if (sessionError) {
+                // Only show error if it's not an abort error (abort errors are handled by retry)
+                if (sessionError.name !== 'AbortError' && !sessionError.message?.includes('aborted')) {
+                    setError('Session error. Please request a new password reset link.');
+                    isSubmittingRef.current = false;
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            if (!currentSession) {
+                setError('No active session. Please click the link from your email again or request a new password reset link.');
+                isSubmittingRef.current = false;
+                setLoading(false);
+                return;
+            }
+
+            // Update password with better error handling
+            // Wrap in try-catch to handle abort errors gracefully
+            let updateResult;
+            try {
+                updateResult = await supabase.auth.updateUser({
+                    password: password,
+                });
+            } catch (updateErr: any) {
+                // If the promise itself throws (abort error), retry
+                if (updateErr?.name === 'AbortError' || 
+                    updateErr?.message?.includes('aborted') || 
+                    updateErr?.message?.includes('signal is aborted')) {
+                    console.log('Password update was aborted. Retrying...');
+                    // Wait a bit before retry
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    updateResult = await supabase.auth.updateUser({
+                        password: password,
+                    });
+                } else {
+                    throw updateErr;
+                }
+            }
+
+            // Check for abort errors specifically
+            if (updateResult.error) {
+                const error = updateResult.error;
+                
+                // Handle abort errors
+                if (error.message?.includes('aborted') || 
+                    error.message?.includes('signal is aborted') ||
+                    error.name === 'AbortError') {
+                    console.log('Password update error was aborted. Retrying...');
+                    
+                    // Wait a bit before retry
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    // Retry once
+                    const retryResult = await supabase.auth.updateUser({
+                        password: password,
+                    });
+                    
+                    if (retryResult.error) {
+                        // If retry also fails, check if it's still an abort error
+                        if (retryResult.error.message?.includes('aborted') || 
+                            retryResult.error.message?.includes('signal is aborted') ||
+                            retryResult.error.name === 'AbortError') {
+                            setError('Network request was interrupted. Please check your connection and try again.');
+                        } else {
+                            setError(retryResult.error.message || 'Failed to update password. Please try again.');
+                        }
+                    } else {
+                        // Retry succeeded
+                        setPasswordChanged(true);
+                        setMessage('Password updated successfully! Redirecting to login...');
+                        sessionStorage.removeItem('password_recovery_flow');
+                        // Wait a moment before signing out to ensure password update is complete
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        try {
+                            await supabase.auth.signOut();
+                        } catch (signOutError) {
+                            // Ignore sign out errors
+                        }
+                        setTimeout(() => {
+                            router.push('/auth');
+                        }, 1500);
+                    }
+                } else {
+                    // Other errors
+                    console.error('Password update error:', error);
+                    setError(error.message || 'Failed to update password. Please try again.');
+                }
             } else {
+                // Success
+                setPasswordChanged(true);
                 setMessage('Password updated successfully! Redirecting to login...');
+                // Clear any recovery flags
+                sessionStorage.removeItem('password_recovery_flow');
+                // Wait a moment before signing out to ensure password update is complete
+                await new Promise(resolve => setTimeout(resolve, 500));
+                try {
+                    await supabase.auth.signOut();
+                } catch (signOutError) {
+                    // Ignore sign out errors
+                }
                 setTimeout(() => {
                     router.push('/auth');
-                }, 2000);
+                }, 1500);
             }
         } catch (err: any) {
-            setError(err.message || 'An error occurred');
+            // Handle abort errors in catch block
+            if (err?.name === 'AbortError' || 
+                err?.message?.includes('aborted') || 
+                err?.message?.includes('signal is aborted')) {
+                // Don't log abort errors - they're expected during development
+                setError('Request was interrupted. Please check your internet connection and try again.');
+            } else {
+                console.error('Password update exception:', err);
+                setError(err.message || 'An error occurred. Please try again.');
+            }
         } finally {
+            isSubmittingRef.current = false;
             setLoading(false);
         }
     };
@@ -269,6 +640,27 @@ const ResetPasswordPage: React.FC = () => {
                                     <h2 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '12px', letterSpacing: '-0.5px' }}>
                                         New Password
                                     </h2>
+                                    {isRecoveryFlow && !passwordChanged && (
+                                        <div style={{
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            fontSize: '14px',
+                                            fontWeight: '600',
+                                            backgroundColor: '#fef3c7',
+                                            color: '#92400e',
+                                            border: '1px solid #fcd34d',
+                                            marginBottom: '20px',
+                                            display: 'flex',
+                                            gap: '12px',
+                                            alignItems: 'start'
+                                        }}>
+                                            <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px', fontSize: '18px' }}></i>
+                                            <div>
+                                                <strong style={{ display: 'block', marginBottom: '8px' }}>Password Reset Required</strong>
+                                                You must set a new password to complete the password reset process. You cannot navigate away from this page until you change your password.
+                                            </div>
+                                        </div>
+                                    )}
                                     <p style={{ color: '#64748b', fontSize: '16px' }}>
                                         Please enter your new password below.
                                     </p>

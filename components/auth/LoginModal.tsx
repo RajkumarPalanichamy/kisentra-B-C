@@ -155,21 +155,29 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         setMessage('');
 
         try {
+            if (!email || !email.includes('@')) {
+                setError('Please enter a valid email address');
+                setForgotPasswordLoading(false);
+                return;
+            }
+
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+                redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
             });
 
             if (error) {
-                setError(error.message);
+                console.error('Password reset error:', error);
+                setError(error.message || 'Failed to send password reset email. Please try again.');
             } else {
-                setMessage('Password reset email sent! Please check your inbox and follow the instructions.');
+                setMessage('Password reset email sent! Please check your inbox and spam folder.');
                 setTimeout(() => {
                     setShowForgotPassword(false);
                     setMessage('');
                 }, 3000);
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to send password reset email');
+            console.error('Password reset exception:', err);
+            setError(err.message || 'Failed to send password reset email. Please try again.');
         } finally {
             setForgotPasswordLoading(false);
         }
