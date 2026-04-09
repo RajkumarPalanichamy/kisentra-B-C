@@ -268,8 +268,8 @@ const ProductsContent: React.FC = () => {
                           style={{ width: '100%', cursor: 'pointer' }}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-default)', marginTop: '5px' }}>
-                          <span>${priceRange[0]}</span>
-                          <span>${priceRange[1]}</span>
+                          <span>₹{priceRange[0]}</span>
+                          <span>₹{priceRange[1]}</span>
                         </div>
                       </div>
 

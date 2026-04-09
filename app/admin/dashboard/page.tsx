@@ -221,7 +221,7 @@ const AdminDashboard: React.FC = () => {
                 color: 'var(--color-heading)',
                 margin: '0 0 5px 0'
               }}>
-                ${stats.totalValue.toLocaleString()}
+                ₹{stats.totalValue.toLocaleString()}
               </h3>
               <p style={{ color: 'var(--color-default)', margin: 0, fontSize: '14px' }}>
                 Total Value

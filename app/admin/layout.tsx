@@ -156,6 +156,21 @@ const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children 
               <i className="fas fa-box" style={{ marginRight: '10px' }}></i>
               Products
             </Link>
+            <Link
+              href="/admin/orders"
+              style={{
+                display: 'block',
+                padding: '12px 30px',
+                color: pathname === '/admin/orders' ? 'var(--color-primary-two)' : 'var(--color-heading)',
+                textDecoration: 'none',
+                fontWeight: pathname === '/admin/orders' ? '600' : '400',
+                backgroundColor: pathname === '/admin/orders' ? '#f6f6f8' : 'transparent',
+                borderLeft: pathname === '/admin/orders' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
+              }}
+            >
+              <i className="fas fa-shopping-cart" style={{ marginRight: '10px' }}></i>
+              Orders
+            </Link>
             <Link href="/admin/categories" className={`nav-link ${pathname === '/admin/categories' ? 'active' : ''}`} style={{
               color: pathname === '/admin/categories' ? '#333' : '#666',
               padding: '12px 15px',

@@ -84,7 +84,7 @@ const CareerSingle: React.FC = () => {
                       <span>Location :</span> Warsaw, Poland
                     </li>
                     <li>
-                      <span>Salary :</span> $80k to $100k (Based on your experience)
+                      <span>Salary :</span> ₹80k to ₹100k (Based on your experience)
                     </li>
                     <li>
                       <span>Deadline :</span> December 10, 2024

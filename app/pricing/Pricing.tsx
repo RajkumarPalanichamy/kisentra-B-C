@@ -84,7 +84,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$299</h2>
+                        <h2 className="xb-item--number">₹299</h2>
                         <span className="xb-item--time">Per Year</span>
                       </div>
                       <div className="xb-item--line"></div>
@@ -118,7 +118,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$499</h2>
+                        <h2 className="xb-item--number">₹499</h2>
                         <span className="xb-item--time">Per Year</span>
                       </div>
                       <div className="xb-item--line"></div>
@@ -151,7 +151,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$999</h2>
+                        <h2 className="xb-item--number">₹999</h2>
                         <span className="xb-item--time">Per Year</span>
                       </div>
                       <div className="xb-item--line"></div>
@@ -189,7 +189,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$29</h2>
+                        <h2 className="xb-item--number">₹29</h2>
                         <span className="xb-item--time">Per Month</span>
                       </div>
                       <div className="xb-item--line"></div>
@@ -223,7 +223,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$49</h2>
+                        <h2 className="xb-item--number">₹49</h2>
                         <span className="xb-item--time">Per Month</span>
                       </div>
                       <div className="xb-item--line"></div>
@@ -256,7 +256,7 @@ const PricingSection: React.FC = () => {
                         </div>
                       </div>
                       <div className="xb-item--price">
-                        <h2 className="xb-item--number">$99</h2>
+                        <h2 className="xb-item--number">₹99</h2>
                         <span className="xb-item--time">Per Month</span>
                       </div>
                       <div className="xb-item--line"></div>

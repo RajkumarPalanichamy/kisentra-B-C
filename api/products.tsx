@@ -23,6 +23,7 @@ export interface Product {
   reviews?: number
   features?: string[]
   tags?: string[]
+  highlights?: { [key: string]: string } // Key-value pairs for product highlights/specifications
   visible?: boolean // For admin to enable/disable products
 }
 
@@ -43,13 +44,16 @@ export const getProducts = (): Product[] => {
 };
 
 // Async version to load from Supabase (called after mount)
-export const getProductsFromSupabaseAsync = async (): Promise<Product[] | null> => {
+export const getProductsFromSupabaseAsync = async (signal?: AbortSignal): Promise<Product[] | null> => {
+  if (signal?.aborted) return null;
   if (typeof window === 'undefined') return null;
 
   try {
+    if (signal?.aborted) return null;
     const { isSupabaseConfigured } = await import('@/lib/supabase');
     if (isSupabaseConfigured()) {
       const { getProductsFromSupabase } = await import('./products-supabase');
+      if (signal?.aborted) return null;
       return await getProductsFromSupabase();
     }
   } catch (error: any) {
@@ -99,8 +103,23 @@ export const saveProduct = async (product: Product): Promise<void> => {
     if (isSupabaseConfigured()) {
       import('./products-supabase').then(({ saveProductToSupabase }) => {
         saveProductToSupabase(product).then((success) => {
-          if (!success) console.error('Failed to save product to Supabase');
+          if (!success) {
+            console.error('❌ Failed to save product to Supabase:', {
+              productTitle: product.title,
+              productSlug: product.slug,
+              productId: product.Id
+            });
+          }
+        }).catch((error) => {
+          console.error('❌ Exception while saving product to Supabase:', {
+            productTitle: product.title,
+            productSlug: product.slug,
+            error: error?.message || error,
+            stack: error?.stack
+          });
         });
+      }).catch((error) => {
+        console.error('❌ Failed to import products-supabase:', error);
       });
     }
   }

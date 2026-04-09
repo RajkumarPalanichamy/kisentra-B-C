@@ -250,22 +250,7 @@ const HomePage = () => {
                     </div>
                   </Link>
 
-                  {/* Navigation Arrows */}
-                  <div style={{ position: 'absolute', top: '50%', left: '0', transform: 'translateY(-50%)', zIndex: 10 }}>
-                    <button
-                      onClick={() => setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)}
-                      style={{ width: '40px', height: '80px', background: '#fff', border: 'none', borderRadius: '0 4px 4px 0', boxShadow: '2px 0 5px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="fas fa-chevron-left" style={{ color: '#555' }}></i>
-                    </button>
-                  </div>
 
-                  <div style={{ position: 'absolute', top: '50%', right: '0', transform: 'translateY(-50%)', zIndex: 10 }}>
-                    <button
-                      onClick={() => setCurrentBannerIndex((prev) => (prev + 1) % banners.length)}
-                      style={{ width: '40px', height: '80px', background: '#fff', border: 'none', borderRadius: '4px 0 0 4px', boxShadow: '-2px 0 5px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="fas fa-chevron-right" style={{ color: '#555' }}></i>
-                    </button>
-                  </div>
 
                   {/* Dots indicator */}
                   <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 10 }}>

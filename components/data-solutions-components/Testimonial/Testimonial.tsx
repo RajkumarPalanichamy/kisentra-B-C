@@ -69,7 +69,7 @@ const Testimonial: React.FC = () => {
                         </p>
                         <div className="xb-item--holder ul_li align-items-start">
                           <div className="xb-item--meta">
-                            <h3 className="xb-item--number">$3 Million</h3>
+                            <h3 className="xb-item--number">₹3 Million</h3>
                             <span className="xb-item--text">
                               Annual cost savings achieved through optimized trial operations.
                             </span>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -16,6 +16,7 @@ import LoginModal from '@/components/auth/LoginModal';
 
 const Header: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobailActive, setMobailState] = useState(false);
   const [isSticky, setSticky] = useState(false);
   const { user, isLoading, signOut } = useUser();
@@ -24,9 +25,14 @@ const Header: React.FC = () => {
   const { getTotalItems } = useCart();
 
   useEffect(() => {
+    // Don't show login modal on auth-related pages
+    const authPages = ['/auth', '/forgot-password', '/reset-password', '/signup', '/login'];
+    const isAuthPage = authPages.some(page => pathname?.startsWith(page));
+    
     // Automatically show login modal if user is not logged in AND hasn't seen it yet
     // Only run this once when loading finishes and we know user is not logged in
-    if (!isLoading && !user) {
+    // Skip on auth pages to avoid interfering with password reset flow
+    if (!isLoading && !user && !isAuthPage) {
       const hasSeenModal = sessionStorage.getItem('hasSeenLoginModal');
       if (!hasSeenModal) {
         // Small delay to ensure smooth entry
@@ -36,7 +42,7 @@ const Header: React.FC = () => {
         }, 1000);
       }
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, pathname]);
 
   const handleLogout = async () => {
     await signOut();

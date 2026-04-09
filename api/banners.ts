@@ -87,7 +87,7 @@ const getLocalBanners = (): Banner[] => {
         {
             id: 'default-2',
             title: 'Latest Gadgets',
-            subtitle: 'Starting at $99',
+            subtitle: 'Starting at ₹99',
             image_url: 'https://placehold.co/500x300/png?text=Gadgets',
             link: '/products?category=electronics',
             bg_color_from: '#FF6A00',

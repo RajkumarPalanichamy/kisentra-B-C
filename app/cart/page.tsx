@@ -79,8 +79,8 @@ const CartPage: React.FC = () => {
                           textDecoration: 'none',
                           transition: 'color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
                           Home
                         </Link>
                       </li>
@@ -91,8 +91,8 @@ const CartPage: React.FC = () => {
                           textDecoration: 'none',
                           transition: 'color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
                           Shop
                         </Link>
                       </li>
@@ -166,7 +166,7 @@ const CartPage: React.FC = () => {
                                 fontWeight: '700',
                                 color: 'var(--color-primary-two)'
                               }}>
-                                ${item.price}
+                                ₹{item.price}
                               </div>
                             </div>
 
@@ -240,7 +240,7 @@ const CartPage: React.FC = () => {
                               minWidth: '100px',
                               textAlign: 'right'
                             }}>
-                              ${(item.price * item.quantity).toFixed(2)}
+                              ₹{(item.price * item.quantity).toFixed(2)}
                             </div>
                           </div>
                         );
@@ -271,7 +271,7 @@ const CartPage: React.FC = () => {
                         borderBottom: '1px solid #e7e8ec'
                       }}>
                         <span>Price ({getTotalItems()} item{getTotalItems() !== 1 ? 's' : ''}):</span>
-                        <span style={{ fontWeight: '600' }}>${getSubtotal().toFixed(2)}</span>
+                        <span style={{ fontWeight: '600' }}>₹{getSubtotal().toFixed(2)}</span>
                       </div>
 
                       <div className="summary-row mb-20" style={{
@@ -286,17 +286,17 @@ const CartPage: React.FC = () => {
                           {getShipping() === 0 ? (
                             <>
                               <span style={{ textDecoration: 'line-through', color: 'var(--color-default)', marginRight: '5px' }}>
-                                $10.00
+                                ₹10.00
                               </span>
                               <span style={{ color: 'green' }}>FREE</span>
                             </>
                           ) : (
-                            `$${getShipping().toFixed(2)}`
+                            `₹${getShipping().toFixed(2)}`
                           )}
                         </span>
                       </div>
 
-                      {getSubtotal() < 100 && (
+                      {getSubtotal() < 499 && (
                         <div style={{
                           padding: '10px',
                           backgroundColor: '#fff3cd',
@@ -307,7 +307,7 @@ const CartPage: React.FC = () => {
                           border: '1px solid #ffeaa7'
                         }}>
                           <i className="fas fa-info-circle" style={{ marginRight: '8px' }}></i>
-                          Add ${(100 - getSubtotal()).toFixed(2)} more for FREE delivery
+                          Add ₹{(499 - getSubtotal()).toFixed(2)} more for FREE delivery
                         </div>
                       )}
 
@@ -319,7 +319,7 @@ const CartPage: React.FC = () => {
                         borderBottom: '1px solid #e7e8ec'
                       }}>
                         <span>Tax:</span>
-                        <span style={{ fontWeight: '600' }}>${getTax().toFixed(2)}</span>
+                        <span style={{ fontWeight: '600' }}>₹{getTax().toFixed(2)}</span>
                       </div>
 
                       <div className="summary-row mb-30" style={{
@@ -334,7 +334,7 @@ const CartPage: React.FC = () => {
                       }}>
                         <span>Total Amount:</span>
                         <span style={{ color: 'var(--color-primary-two)' }}>
-                          ${getTotal().toFixed(2)}
+                          ₹{getTotal().toFixed(2)}
                         </span>
                       </div>
 
@@ -348,7 +348,7 @@ const CartPage: React.FC = () => {
                         border: '1px solid #c3e6cb'
                       }}>
                         <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
-                        You will save ${(getTax()).toFixed(2)} on this order
+                        You will save ₹{(getTax()).toFixed(2)} on this order
                       </div>
 
                       <div className="cart-actions" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>

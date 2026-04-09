@@ -35,6 +35,48 @@
   transform: scale(1.05);
 }
 
+/* Ensure base64 images are visible */
+.product-card-base64-image {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  z-index: 1 !important;
+}
+
+/* Slideshow transitions */
+.product-card-image img,
+.product-card-image [data-next-image] {
+  transition: opacity 0.3s ease-in-out, transform 0.5s ease !important;
+}
+
+/* Prevent image selection during swipe */
+.product-card-image {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth slideshow animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.product-card-image img {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
 .product-card-footer {
   margin-top: auto;
   padding-top: 15px;

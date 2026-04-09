@@ -24,9 +24,22 @@ const AuthPage: React.FC = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/');
+      try {
+        const { data: { session } } = await supabase.auth.getSession().catch((err: any) => {
+          // Ignore AbortErrors during hot reload
+          if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
+            return { data: { session: null }, error: null };
+          }
+          throw err;
+        });
+        if (session) {
+          router.push('/');
+        }
+      } catch (err: any) {
+        // Silently ignore AbortErrors
+        if (err?.name !== 'AbortError' && !err?.message?.includes('aborted')) {
+          console.error('Error checking session:', err);
+        }
       }
     };
     checkSession();
@@ -388,9 +401,9 @@ const AuthPage: React.FC = () => {
                     </div>
                     {isLogin && (
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                        <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
+                        <Link href="/forgot-password" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
                           Forgot password?
-                        </a>
+                        </Link>
                       </div>
                     )}
                   </div>

@@ -297,8 +297,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const getShipping = () => {
-    // Free shipping for orders over $100, otherwise $10
-    return getSubtotal() >= 100 ? 0 : 10;
+    // Free shipping for orders over ₹499, otherwise ₹10
+    return getSubtotal() >= 499 ? 0 : 10;
   };
 
   const getTotal = () => {

@@ -149,7 +149,7 @@ const ProjectSection: React.FC = () => {
                             <span className="xb-item--text">{project.rtext}</span>
                           </div>
                           <div className="xb-item--item border-blue">
-                            <span className="xb-item--number">${project.tnumber}k</span>
+                            <span className="xb-item--number">₹{project.tnumber}k</span>
                             <span className="xb-item--text">{project.ttext}</span>
                           </div>
                           <div className="xb-item--item border-sky">
